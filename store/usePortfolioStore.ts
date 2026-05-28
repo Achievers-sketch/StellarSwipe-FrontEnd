@@ -1,0 +1,60 @@
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+
+export interface PortfolioAsset {
+  symbol: string;
+  name: string;
+  value: number;
+  percentage: number;
+  color: string;
+}
+
+export interface PortfolioState {
+  assets: PortfolioAsset[];
+  totalValue: number;
+  isLoading: boolean;
+  lastUpdated: Date | null;
+  setAssets: (assets: PortfolioAsset[]) => void;
+  setLoading: (loading: boolean) => void;
+  updateAsset: (symbol: string, value: number) => void;
+  removeAsset: (symbol: string) => void;
+  clear: () => void;
+}
+
+export const usePortfolioStore = create<PortfolioState>()(
+  persist(
+    (set, get) => ({
+      assets: [],
+      totalValue: 0,
+      isLoading: false,
+      lastUpdated: null,
+      setAssets: (assets) => {
+        const totalValue = assets.reduce((sum, asset) => sum + asset.value, 0);
+        const normalizedAssets = assets.map((asset) => ({
+          ...asset,
+          percentage: totalValue > 0 ? (asset.value / totalValue) * 100 : 0,
+        }));
+        set({ assets: normalizedAssets, totalValue, lastUpdated: new Date() });
+      },
+      setLoading: (loading) => set({ isLoading: loading }),
+      updateAsset: (symbol, value) => {
+        const assets = get().assets.map((asset) =>
+          asset.symbol === symbol ? { ...asset, value } : asset
+        );
+        const totalValue = assets.reduce((sum, asset) => sum + asset.value, 0);
+        const normalizedAssets = assets.map((asset) => ({
+          ...asset,
+          percentage: totalValue > 0 ? (asset.value / totalValue) * 100 : 0,
+        }));
+        set({ assets: normalizedAssets, totalValue, lastUpdated: new Date() });
+      },
+      removeAsset: (symbol) => {
+        const assets = get().assets.filter((asset) => asset.symbol !== symbol);
+        const totalValue = assets.reduce((sum, asset) => sum + asset.value, 0);
+        set({ assets, totalValue });
+      },
+      clear: () => set({ assets: [], totalValue: 0, lastUpdated: null }),
+    }),
+    { name: "portfolio-store" }
+  )
+);
