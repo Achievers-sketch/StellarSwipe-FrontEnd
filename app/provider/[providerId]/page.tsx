@@ -1,0 +1,215 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { useProviderProfile, useProviderSignals } from "@/hooks/useProviderProfile";
+import { ArrowLeft, Loader2, TrendingUp, TrendingDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { PageTransition } from "@/components/PageTransition";
+
+const SIGNALS_PER_PAGE = 5;
+
+export default function ProviderProfilePage() {
+  const router = useRouter();
+  const params = useParams();
+  const providerId = params?.providerId as string;
+
+  const { data: provider, isLoading: providerLoading } = useProviderProfile(providerId);
+  const { data: signals = [] } = useProviderSignals(providerId);
+  const [currentPage, setCurrentPage] = useState(0);
+
+  const paginatedSignals = signals.slice(
+    currentPage * SIGNALS_PER_PAGE,
+    (currentPage + 1) * SIGNALS_PER_PAGE
+  );
+  const totalPages = Math.ceil(signals.length / SIGNALS_PER_PAGE);
+
+  if (providerLoading) {
+    return (
+      <PageTransition>
+        <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-4 sm:gap-8 sm:p-8 bg-gray-950">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </main>
+      </PageTransition>
+    );
+  }
+
+  if (!provider) {
+    return (
+      <PageTransition>
+        <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-4 sm:gap-8 sm:p-8 bg-gray-950">
+          <p className="text-center text-red-500">Provider not found</p>
+          <Button onClick={() => router.back()}>Go Back</Button>
+        </main>
+      </PageTransition>
+    );
+  }
+
+  return (
+    <PageTransition>
+      <main className="flex min-h-screen flex-col gap-6 p-4 sm:gap-8 sm:p-8 bg-gray-950 w-full max-w-2xl mx-auto">
+        {/* Back button */}
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Go back to previous page"
+        >
+          <ArrowLeft size={16} />
+          Back
+        </button>
+
+        {/* Provider header */}
+        <header className="rounded-lg border bg-card p-6">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div>
+              {provider.name && (
+                <h1 className="text-2xl font-bold text-white mb-2">{provider.name}</h1>
+              )}
+              <p className="text-sm text-muted-foreground font-mono">
+                {provider.address.slice(0, 12)}...{provider.address.slice(-8)}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-muted-foreground">Rank</p>
+              <p className="text-3xl font-bold text-green-600">#{provider.rank}</p>
+            </div>
+          </div>
+
+          {provider.bio && (
+            <p className="text-sm text-foreground mb-6 leading-relaxed">{provider.bio}</p>
+          )}
+
+          {/* Stats grid */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded bg-muted/50 p-3">
+              <p className="text-xs text-muted-foreground mb-1">Win Rate</p>
+              <p className="font-semibold text-green-600">{provider.winRate}%</p>
+            </div>
+            <div className="rounded bg-muted/50 p-3">
+              <p className="text-xs text-muted-foreground mb-1">Total Signals</p>
+              <p className="font-semibold text-foreground">{provider.totalSignals}</p>
+            </div>
+            <div className="rounded bg-muted/50 p-3">
+              <p className="text-xs text-muted-foreground mb-1">Reputation</p>
+              <p className="font-semibold text-blue-600">{provider.reputation}%</p>
+            </div>
+            <div className="rounded bg-muted/50 p-3">
+              <p className="text-xs text-muted-foreground mb-1">Trust Score</p>
+              <p className="font-semibold text-purple-600">{provider.trustScore}%</p>
+            </div>
+          </div>
+        </header>
+
+        {/* Stake information */}
+        <div className="rounded-lg border bg-card p-6">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Stake & Trust</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">Staked Amount</p>
+              <p className="text-2xl font-bold text-foreground">
+                {provider.staked ? `$${provider.staked.toLocaleString()}` : "N/A"}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">Trust Score</p>
+              <p className="text-2xl font-bold text-purple-600">
+                {provider.trustScore}%
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent signals */}
+        <div className="rounded-lg border bg-card p-6">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Recent Signals</h2>
+
+          {paginatedSignals.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">No signals available</p>
+          ) : (
+            <div className="space-y-3">
+              {paginatedSignals.map((signal) => (
+                <div
+                  key={signal.id}
+                  className={`rounded-lg p-3 border ${
+                    signal.outcome === "WIN"
+                      ? "bg-green-500/10 border-green-500/30"
+                      : signal.outcome === "LOSS"
+                      ? "bg-red-500/10 border-red-500/30"
+                      : "bg-yellow-500/10 border-yellow-500/30"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-foreground">{signal.asset}</span>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded font-medium ${
+                          signal.direction === "BUY"
+                            ? "bg-green-600 text-white"
+                            : "bg-red-600 text-white"
+                        }`}
+                      >
+                        {signal.direction}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {signal.confidence}% confidence
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {signal.outcome === "WIN" && (
+                        <TrendingUp size={16} className="text-green-600" aria-label="Won" />
+                      )}
+                      {signal.outcome === "LOSS" && (
+                        <TrendingDown size={16} className="text-red-600" aria-label="Lost" />
+                      )}
+                      <span
+                        className={`text-xs font-medium ${
+                          signal.outcome === "WIN"
+                            ? "text-green-600"
+                            : signal.outcome === "LOSS"
+                            ? "text-red-600"
+                            : "text-yellow-600"
+                        }`}
+                      >
+                        {signal.outcome}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-2">
+                    {new Date(signal.timestamp).toLocaleString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                disabled={currentPage === 0}
+                aria-label="Previous page"
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Page {currentPage + 1} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                disabled={currentPage === totalPages - 1}
+                aria-label="Next page"
+              >
+                Next
+              </Button>
+            </div>
+          )}
+        </div>
+      </main>
+    </PageTransition>
+  );
+}

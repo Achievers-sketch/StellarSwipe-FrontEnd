@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { SignalProvider } from "@/lib/types";
 import { Loader2, ChevronUp, ChevronDown } from "lucide-react";
@@ -10,6 +11,7 @@ type SortField = "rank" | "overallScore" | "winRate" | "recentPerformance";
 type SortDirection = "asc" | "desc";
 
 export default function LeaderboardPage() {
+  const router = useRouter();
   const { data: providers, isLoading, error } = useLeaderboard();
   const [sortField, setSortField] = useState<SortField>("rank");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
@@ -115,7 +117,20 @@ export default function LeaderboardPage() {
             </thead>
             <tbody>
               {sortedProviders.map((provider) => (
-                <tr key={provider.id} className="border-b hover:bg-muted/30 transition-colors">
+                <tr
+                  key={provider.id}
+                  className="border-b hover:bg-muted/30 transition-colors cursor-pointer"
+                  onClick={() => router.push(`/provider/${provider.id}`)}
+                  role="link"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      router.push(`/provider/${provider.id}`);
+                    }
+                  }}
+                  aria-label={`View profile for ${provider.name || provider.address}`}
+                >
                   <td className="px-4 py-3 font-semibold text-foreground">#{provider.rank}</td>
                   <td className="px-4 py-3">
                     <div className="flex flex-col gap-0.5">
