@@ -1,16 +1,27 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useWallet } from "@/hooks/useWallet";
 import { useSignals } from "@/hooks/useSignals";
 import { Button } from "@/components/ui/button";
 import { WalletDropdown } from "@/components/WalletDropdown";
 import { SignalErrorState } from "@/components/SignalErrorState";
+import { SignalCard } from "@/components/SignalCard";
 import { Loader2 } from "lucide-react";
 
 export default function Home() {
   const { connected, connect } = useWallet();
   const { data: signals, isLoading, error, refetch } = useSignals();
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  function toggleExpand(id: string) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8">
@@ -58,18 +69,12 @@ export default function Home() {
         {signals && signals.length > 0 && (
           <ul className="flex flex-col gap-3">
             {signals.map((signal) => (
-              <li
+              <SignalCard
                 key={signal.id}
-                className="rounded-xl border p-4 text-sm flex justify-between items-center"
-              >
-                <span className="font-medium">{signal.asset}</span>
-                <span
-                  className={signal.action === "BUY" ? "text-green-500" : "text-red-500"}
-                >
-                  {signal.action}
-                </span>
-                <span className="text-muted-foreground">{signal.confidence}%</span>
-              </li>
+                signal={signal}
+                expanded={expandedIds.has(signal.id)}
+                onToggle={() => toggleExpand(signal.id)}
+              />
             ))}
           </ul>
         )}

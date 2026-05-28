@@ -12,12 +12,22 @@ export class ServerError extends Error {
   }
 }
 
+export interface SignalStats {
+  entryPrice: number;
+  targetPrice: number;
+  stopLoss: number;
+  riskReward: string;
+}
+
 export interface Signal {
   id: string;
   asset: string;
   action: "BUY" | "SELL";
   confidence: number;
   timestamp: string;
+  rationale?: string;
+  stats?: SignalStats;
+  providerNotes?: string;
 }
 
 export async function fetchSignals(): Promise<Signal[]> {
