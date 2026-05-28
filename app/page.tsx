@@ -1,9 +1,27 @@
 "use client";
 
+import { useState } from "react";
 import { useState, lazy, Suspense } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { WalletDropdown } from "@/components/WalletDropdown";
+import { SignalErrorState } from "@/components/SignalErrorState";
+import { SignalCard } from "@/components/SignalCard";
+import { Loader2 } from "lucide-react";
+
+export default function Home() {
+  const { connected, connect } = useWallet();
+  const { data: signals, isLoading, error, refetch } = useSignals();
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  function toggleExpand(id: string) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
 import { CTABanner } from "@/components/CTABanner";
 import { HowItWorks } from "@/components/HowItWorks";
 import { Footer } from "@/components/Footer";
@@ -51,6 +69,20 @@ export default function Home() {
           </Button>
         </motion.div>
 
+        {signals && signals.length > 0 && (
+          <ul className="flex flex-col gap-3">
+            {signals.map((signal) => (
+              <SignalCard
+                key={signal.id}
+                signal={signal}
+                expanded={expandedIds.has(signal.id)}
+                onToggle={() => toggleExpand(signal.id)}
+              />
+            ))}
+          </ul>
+        )}
+      </div>
+    </main>
         <HowItWorks />
         <CTABanner />
         <Footer />
