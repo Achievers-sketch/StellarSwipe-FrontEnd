@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import { useWallet } from "@/hooks/useWallet";
 import { useSignals } from "@/hooks/useSignals";
 import { usePortfolio } from "@/hooks/usePortfolio";
+import { useSignalFilterStore } from "@/store/useSignalFilterStore";
+import { useTransactionStore } from "@/store/useTransactionStore";
 import { Button } from "@/components/ui/button";
 import { SignalErrorState } from "@/components/SignalErrorState";
 import { SignalFeedFilters } from "@/components/SignalFeedFilters";
@@ -16,19 +18,40 @@ import { WalletDropdown } from "@/components/WalletDropdown";
 import { PageTransition } from "@/components/PageTransition";
 import { PortfolioAllocationChart } from "@/components/chart/PortfolioAllocationChart";
 import { PortfolioSummaryCards } from "@/components/PortfolioSummaryCards";
+import { PnLWidget } from "@/components/chart/PnLWidget";
+import { OnChainConfirmationStatus } from "@/components/OnChainConfirmationStatus";
+import { TransactionActivityFeed } from "@/components/TransactionActivityFeed";
+import { PositionStopLossControl } from "@/components/PositionStopLossControl";
 
 export default function AppPage() {
-  const { publicKey, connected, disconnect } = useWallet();
+  const { publicKey, connected } = useWallet();
   const { data: signals, isLoading, error, refetch } = useSignals();
   const { assets } = usePortfolio();
+  const { direction, asset, provider } = useSignalFilterStore();
+  const addTransaction = useTransactionStore((state) => state.addTransaction);
+  const pendingTransaction = useTransactionStore((state) =>
+    state.history.find((item) => item.status === "PENDING")
+  );
   const [modalOpen, setModalOpen] = useState(false);
   const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [marketPrice, setMarketPrice] = useState(0.4821);
   const [loading, setLoading] = useState(false);
 
-  const handleTrade = (price: number) => {
+  const handleTrade = (pair: string, price: number) => {
     setMarketPrice(price);
-    setModalOpen(true);
+    addTransaction({
+      id: `tx-${Date.now()}`,
+      hash: `${Date.now().toString(16)}${pair.replace(/[^a-zA-Z0-9]/g, "")}`,
+      assetPair: pair,
+      amount: "100",
+      price: price.toFixed(4),
+      fee: "0.0004",
+      token: "XLM",
+      timestamp: Date.now(),
+      type: "SWAP",
+      status: "PENDING",
+      outcome: "PENDING",
+    });
   };
 
   const toggleLoading = () => {
@@ -42,12 +65,17 @@ export default function AppPage() {
     [signals]
   );
 
-  // Filter signals based on active filters
+  const availableProviders = useMemo(
+    () => [...new Set((signals ?? []).map((s) => (s as any).providerId).filter(Boolean))].sort(),
+    [signals]
+  );
+
   const filteredSignals = useMemo(() => {
     if (!signals) return [];
     return signals.filter((s) => {
       if (direction !== "ALL" && s.action !== direction) return false;
       if (asset && s.asset.toUpperCase() !== asset.toUpperCase()) return false;
+      if (provider && (s as any).providerId !== provider) return false;
       return true;
     });
   }, [signals, direction, asset, provider]);
@@ -106,48 +134,69 @@ export default function AppPage() {
           </div>
         </header>
 
-        {/* Signal Feed */}
+        {/* On-chain confirmation status */}
         <div className="w-full max-w-md">
-          {isLoading && (
-            <div className="flex justify-center py-10">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          )}
+          <OnChainConfirmationStatus
+            transactionHash={pendingTransaction?.hash}
+            status={pendingTransaction?.status}
+          />
+        </div>
 
-          {error && (
-            <SignalErrorState error={error as Error} onRetry={refetch} />
-          )}
+        {/* Signal Feed */}
+        <div className="w-full max-w-md space-y-4">
+          <SignalFeedFilters
+            availableAssets={availableAssets}
+            availableProviders={availableProviders}
+          />
 
-          {signals && signals.length === 0 && (
-            <p className="text-center text-sm text-muted-foreground">No signals available.</p>
-          )}
+          <div className="rounded-3xl border border-white/10 bg-card p-4 shadow-sm">
+            {isLoading && (
+              <div className="flex justify-center py-10">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            )}
 
-          {signals && signals.length > 0 && (
-            <ul className="flex flex-col gap-3">
-              {signals.map((signal) => (
-                <li
-                  key={signal.id}
-                  className="rounded-xl border p-4 text-sm flex justify-between items-center"
-                >
-                  <span className="font-medium">{signal.asset}</span>
-                  <span
-                    className={signal.action === "BUY" ? "text-green-500" : "text-red-500"}
+            {error && (
+              <SignalErrorState error={error as Error} onRetry={refetch} />
+            )}
+
+            {filteredSignals && filteredSignals.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground">No signals available.</p>
+            )}
+
+            {filteredSignals && filteredSignals.length > 0 && (
+              <ul className="flex flex-col gap-3">
+                {filteredSignals.map((signal) => (
+                  <li
+                    key={signal.id}
+                    className="rounded-xl border p-4 text-sm flex justify-between items-center"
                   >
-                    {signal.action}
-                  </span>
-                  <span className="text-muted-foreground">{signal.confidence}%</span>
-                </li>
-              ))}
-            </ul>
-          )}
+                    <span className="font-medium">{signal.asset}</span>
+                    <span
+                      className={signal.action === "BUY" ? "text-green-500" : "text-red-500"}
+                    >
+                      {signal.action}
+                    </span>
+                    <span className="text-muted-foreground">{signal.confidence}%</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
 
         {/* Portfolio Summary + Allocation */}
         <div className="w-full max-w-md space-y-3">
           <PortfolioSummaryCards />
+          <PositionStopLossControl />
           <div>
             <PortfolioAllocationChart />
           </div>
+        </div>
+
+        {/* Transaction activity feed */}
+        <div className="w-full max-w-md">
+          <TransactionActivityFeed />
         </div>
 
         {/* P&L Widget */}
