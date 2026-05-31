@@ -205,6 +205,25 @@ export function SignalCard({
   }
 
   return (
+    <li className="rounded-xl border text-sm overflow-hidden">
+      {/* Collapsed row */}
+      <button
+        onClick={onToggle}
+        aria-expanded={expanded}
+        aria-controls={`signal-details-${signal.id}`}
+        aria-label={`${signal.asset} ${signal.action} ${signal.confidence}% confidence — ${expanded ? "collapse" : "expand"} details`}
+        className="w-full p-4 flex justify-between items-center hover:bg-muted/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+      >
+        <span className="font-medium">{signal.asset}</span>
+        <span className={signal.action === "BUY" ? "text-green-600" : "text-red-600"}>
+          {signal.action}
+        </span>
+        <span className="text-muted-foreground">{signal.confidence}%</span>
+        <motion.span
+          animate={{ rotate: expanded ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="text-muted-foreground"
+          aria-hidden="true"
     <AnimatePresence>
       {!dismissed && (
         <motion.div
@@ -232,6 +251,37 @@ export function SignalCard({
           </motion.div>
 
           <motion.div
+            key="details"
+            id={`signal-details-${signal.id}`}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4 flex flex-col gap-3 border-t pt-3">
+              {signal.rationale && (
+                <div>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground mb-1">Rationale</p>
+                  <p className="text-sm">{signal.rationale}</p>
+                </div>
+              )}
+
+              {signal.stats && (
+                <div>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground mb-1">Stats</p>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    <span className="text-muted-foreground">Entry</span>
+                    <span>{signal.stats.entryPrice}</span>
+                    <span className="text-muted-foreground">Target</span>
+                    <span className="text-green-600">{signal.stats.targetPrice}</span>
+                    <span className="text-muted-foreground">Stop Loss</span>
+                    <span className="text-red-600">{signal.stats.stopLoss}</span>
+                    <span className="text-muted-foreground">R/R</span>
+                    <span>{signal.stats.riskReward}</span>
+                  </div>
+                </div>
+              )}
             className="pointer-events-none absolute inset-0 z-10 flex items-center justify-end rounded-2xl border-2 border-red-500 bg-red-500/10 pr-6"
             style={{ opacity: passOpacity }}
             aria-hidden="true"

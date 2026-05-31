@@ -67,6 +67,23 @@ export default function Home() {
           >
             Connect Wallet
           </Button>
+        )}
+      </motion.div>
+
+      <div className="w-full max-w-md">
+        {isLoading && (
+          <div className="flex justify-center py-10" role="status" aria-label="Loading signals">
+            <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        )}
+
+        {error && (
+          <SignalErrorState error={error as Error} onRetry={refetch} />
+        )}
+
+        {signals && signals.length === 0 && (
+          <p role="status" className="text-center text-sm text-muted-foreground">No signals available.</p>
+        )}
         </motion.div>
 
         {signals && signals.length > 0 && (
