@@ -36,8 +36,17 @@ export function SignalFilterBottomSheet({
   timeframe = "1d",
   onTimeframeChange,
 }: SignalFilterBottomSheetProps) {
-  const { direction, asset, provider, setDirection, setAsset, setProvider, reset } =
-    useSignalFilterStore();
+  const {
+    direction,
+    asset,
+    provider,
+    bookmarkedOnly,
+    setDirection,
+    setAsset,
+    setProvider,
+    setBookmarkedOnly,
+    reset,
+  } = useSignalFilterStore();
 
   const sheetRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -100,7 +109,7 @@ export function SignalFilterBottomSheet({
     };
   }, [open]);
 
-  const isActive = direction !== "ALL" || asset !== "" || provider !== "";
+  const isActive = direction !== "ALL" || asset !== "" || provider !== "" || bookmarkedOnly;
 
   return (
     <AnimatePresence>
@@ -144,6 +153,19 @@ export function SignalFilterBottomSheet({
                 Filters
               </span>
               <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setBookmarkedOnly(!bookmarkedOnly)}
+                  aria-pressed={bookmarkedOnly}
+                  className={cn(
+                    "rounded-full px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500",
+                    bookmarkedOnly
+                      ? "bg-sky-500/15 text-sky-300 border border-sky-500/40"
+                      : "bg-white/5 text-slate-300 border border-white/10 hover:border-white/20 hover:text-white"
+                  )}
+                >
+                  Bookmarked
+                </button>
                 {isActive && (
                   <button
                     onClick={reset}

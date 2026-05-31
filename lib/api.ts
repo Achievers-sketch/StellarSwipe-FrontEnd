@@ -27,7 +27,8 @@ export interface Signal {
   timestamp: string;
   rationale?: string;
   stats?: SignalStats;
-  providerNotes?: string;
+  providerId?: string;
+  providerName?: string;
 }
 
 export async function fetchSignals(): Promise<Signal[]> {

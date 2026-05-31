@@ -6,9 +6,18 @@ import {
   useMotionValue,
   useTransform,
   AnimatePresence,
-  PanInfo,
+  type PanInfo,
 } from "framer-motion";
-import { TrendingUp, TrendingDown, Minus, X, Zap, Check, Share2 } from "lucide-react";
+import {
+  Bookmark,
+  Check,
+  Minus,
+  Share2,
+  TrendingDown,
+  TrendingUp,
+  X,
+  Zap,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SignalBadge } from "@/components/SignalBadge";
 import { SignalTimestamp } from "@/components/SignalTimestamp";
@@ -20,8 +29,11 @@ import { MiniChart } from "./chart/MiniChart";
 import { PremiumSignalBadge } from "@/components/PremiumSignalBadge";
 import { ProviderRatingBadge } from "@/components/ProviderRatingBadge";
 import { useDemoModeStore } from "@/store/useDemoModeStore";
-import analyticsService from "@/services/analytics";
+import { useBookmarkStore } from "@/store/useBookmarkStore";
 import { usePriceFormat } from "@/hooks/usePriceFormat";
+import { useSignalPrice } from "@/hooks/useSignalPrice";
+import { toast } from "sonner";
+import type { Signal as ApiSignal } from "@/lib/api";
 
 interface ROIPoint {
   value: number;
@@ -29,16 +41,18 @@ interface ROIPoint {
 
 interface SignalCardProps {
   loading?: boolean;
+  signalData?: ApiSignal;
   pair?: string;
   executionPrice?: number;
   confidence?: number;
   projectedTarget?: number;
   roiHistory?: ROIPoint[];
   analysis?: string;
-  signal?: "BUY" | "SELL";
+  action?: "BUY" | "SELL";
   timestamp?: Date;
   providerStake?: number;
   providerReputation?: number;
+  providerName?: string;
   isPremium?: boolean;
   hasAccess?: boolean;
   requiredStake?: number;
@@ -63,16 +77,18 @@ const VELOCITY_THRESHOLD = 780;
 
 export function SignalCard({
   loading = false,
-  pair = "XLM/USDC",
+  signalData,
+  pair,
   executionPrice = 0.4821,
   confidence = 87,
   projectedTarget = 0.5310,
   roiHistory = DEFAULT_ROI,
   analysis = "Momentum building after a strong volume breakout above the 50-day MA. RSI at 62 with room to run.",
-  signal = "BUY",
+  action = "BUY",
   timestamp = new Date(Date.now() - 5 * 60 * 1000),
   providerStake,
   providerReputation,
+  providerName,
   isPremium = false,
   hasAccess = true,
   requiredStake = 1000,
@@ -97,28 +113,45 @@ export function SignalCard({
   const tradeOpacity = useTransform(x, [20, SWIPE_THRESHOLD], [0, 1]);
   const passOpacity = useTransform(x, [-20, -SWIPE_THRESHOLD], [0, 1]);
 
+  const { price, flash, relativeTime } = useSignalPrice(3000);
+  const bookmarks = useBookmarkStore((state) => state.bookmarks);
+  const toggleBookmark = useBookmarkStore((state) => state.toggleBookmark);
+
+  const signalId = signalData?.id ?? pair ?? "signal-unknown";
+  const signalPair = pair ?? `${signalData?.asset ?? "XLM"}/USDC`;
+  const signalAction = signalData?.action ?? action;
+  const signalConfidence = signalData?.confidence ?? confidence;
+  const signalTimestamp = signalData?.timestamp
+    ? new Date(signalData.timestamp)
+    : timestamp;
+  const signalProvider =
+    providerName ?? signalData?.providerName ?? signalData?.providerId ?? signalData?.asset ?? "Provider";
+
+  const isBookmarked = bookmarks.includes(signalId);
+  const bookmarkedLabel = isBookmarked ? "Remove bookmark" : "Bookmark signal";
+
+  const currentPrice = executionPrice;
+  const deltaValue = parseFloat((price.executionPrice - currentPrice).toFixed(4));
+  const deltaPercent = currentPrice
+    ? parseFloat(((deltaValue / currentPrice) * 100).toFixed(2))
+    : 0;
+  const deltaLabel = `${deltaPercent >= 0 ? "+" : ""}${deltaPercent.toFixed(2)}%`;
+  const deltaAbsLabel = `${deltaValue >= 0 ? "+" : ""}${deltaValue.toFixed(4)}`;
+  const deltaPositive = deltaValue >= 0;
+
   if (loading) return <TradeSkeleton />;
 
   const roi = (((projectedTarget - executionPrice) / executionPrice) * 100).toFixed(2);
   const isPositive = parseFloat(roi) >= 0;
-  const DirectionIcon = signal === "BUY" ? TrendingUp : signal === "SELL" ? TrendingDown : Minus;
 
   function handlePass() {
     setDismissed(true);
-    analyticsService.track("swipe_action", {
-      direction: "pass",
-      signal_id: pair,
-    });
     onPass?.();
   }
 
   function handleExecuteTrade() {
     if (executingRef.current) return;
     executingRef.current = true;
-    analyticsService.track("swipe_action", {
-      direction: "trade",
-      signal_id: pair,
-    });
     setModalOpen(true);
   }
 
@@ -127,16 +160,15 @@ export function SignalCard({
     executingRef.current = false;
   }
 
-  function handleModalConfirm(details: PositionDetails) {
+  function handleModalConfirm(details: { amount: string; price: number; orderType: string }) {
     setModalOpen(false);
     executingRef.current = false;
     const size = parseFloat(details.amount || "0");
-    toast.success(`${signal} position opened`, {
+    toast.success(`${signalAction} position opened`, {
       description: `Entry $${details.price.toFixed(4)} · Size ${size > 0 ? size.toFixed(2) : "—"} XLM`,
-      duration: 6000,
-      link: { href: "/app", label: "View history" },
+      duration: 5000,
     });
-    onTrade?.(pair, executionPrice);
+    onTrade?.(signalPair, executionPrice);
   }
 
   function handleKeyDown(e: KeyboardEvent) {
@@ -148,15 +180,15 @@ export function SignalCard({
   }
 
   function handleCopyLink() {
-    const shareUrl = `${typeof window !== "undefined" ? window.location.origin : ""}?signal=${pair}&price=${executionPrice}&target=${projectedTarget}&signal_type=${signal}`;
+    const shareUrl = `${typeof window !== "undefined" ? window.location.origin : ""}?signal=${signalPair}&price=${executionPrice}&target=${projectedTarget}&signal_type=${signalAction}`;
     navigator.clipboard.writeText(shareUrl);
     setCopiedFeedback(true);
     setShowShareMenu(false);
   }
 
   function handleShare() {
-    const shareUrl = `${typeof window !== "undefined" ? window.location.origin : ""}?signal=${pair}&price=${executionPrice}&target=${projectedTarget}&signal_type=${signal}`;
-    const shareText = `Check out this ${signal} signal for ${pair} on StellarSwipe: ${shareUrl}`;
+    const shareUrl = `${typeof window !== "undefined" ? window.location.origin : ""}?signal=${signalPair}&price=${executionPrice}&target=${projectedTarget}&signal_type=${signalAction}`;
+    const shareText = `Check out this ${signalAction} signal for ${signalPair} on StellarSwipe: ${shareUrl}`;
 
     if (navigator.share) {
       navigator.share({
@@ -230,25 +262,6 @@ export function SignalCard({
   }
 
   return (
-    <li className="rounded-xl border text-sm overflow-hidden">
-      {/* Collapsed row */}
-      <button
-        onClick={onToggle}
-        aria-expanded={expanded}
-        aria-controls={`signal-details-${signal.id}`}
-        aria-label={`${signal.asset} ${signal.action} ${signal.confidence}% confidence — ${expanded ? "collapse" : "expand"} details`}
-        className="w-full p-4 flex justify-between items-center hover:bg-muted/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-      >
-        <span className="font-medium">{signal.asset}</span>
-        <span className={signal.action === "BUY" ? "text-accent-success" : "text-accent-danger"}>
-          {signal.action}
-        </span>
-        <span className="text-muted-foreground">{signal.confidence}%</span>
-        <motion.span
-          animate={{ rotate: expanded ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-          className="text-muted-foreground"
-          aria-hidden="true"
     <AnimatePresence>
       {!dismissed && (
         <motion.div
@@ -277,37 +290,6 @@ export function SignalCard({
           </motion.div>
 
           <motion.div
-            key="details"
-            id={`signal-details-${signal.id}`}
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="overflow-hidden"
-          >
-            <div className="px-4 pb-4 flex flex-col gap-3 border-t pt-3">
-              {signal.rationale && (
-                <div>
-                  <p className="text-xs font-semibold uppercase text-muted-foreground mb-1">Rationale</p>
-                  <p className="text-sm">{signal.rationale}</p>
-                </div>
-              )}
-
-              {signal.stats && (
-                <div>
-                  <p className="text-xs font-semibold uppercase text-muted-foreground mb-1">Stats</p>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                    <span className="text-muted-foreground">Entry</span>
-                    <span>{signal.stats.entryPrice}</span>
-                    <span className="text-muted-foreground">Target</span>
-                    <span className="text-accent-success">{signal.stats.targetPrice}</span>
-                    <span className="text-muted-foreground">Stop Loss</span>
-                    <span className="text-accent-danger">{signal.stats.stopLoss}</span>
-                    <span className="text-muted-foreground">R/R</span>
-                    <span>{signal.stats.riskReward}</span>
-                  </div>
-                </div>
-              )}
             className="pointer-events-none absolute inset-0 z-10 flex items-center justify-end rounded-2xl border-2 border-red-500 bg-red-500/10 pr-6"
             style={{ opacity: passOpacity }}
             aria-hidden="true"
@@ -325,37 +307,50 @@ export function SignalCard({
             tabIndex={0}
             onKeyDown={handleKeyDown}
             role="article"
-            aria-label={`${signal} signal for ${pair} at ${executionPrice} with ${confidence}% confidence`}
+            aria-label={`${signalAction} signal for ${signalPair} at ${executionPrice} with ${signalConfidence}% confidence`}
           >
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-base sm:text-lg">{pair}</span>
-                {isPremium && (
-                  <PremiumSignalBadge hasAccess={hasAccess} requiredStake={requiredStake} />
-                )}
-                {/* Provider rating — compact on mobile, full on sm+ */}
-                <span className="sm:hidden">
-                  <ProviderRatingBadge
-                    trustScore={providerReputation}
-                    winRate={providerReputation}
-                    compact
-                  />
-                </span>
-                <span className="hidden sm:inline-flex">
-                  <ProviderRatingBadge
-                    trustScore={providerReputation}
-                    winRate={providerReputation}
-                    totalSignals={providerStake ? Math.round(providerStake / 100) : undefined}
-                  />
-                </span>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold text-base sm:text-lg">{signalPair}</span>
+                  {isPremium && (
+                    <PremiumSignalBadge hasAccess={hasAccess} requiredStake={requiredStake} />
+                  )}
+                  <span className="hidden sm:inline-flex">
+                    <ProviderRatingBadge
+                      trustScore={providerReputation}
+                      winRate={providerReputation}
+                      totalSignals={providerStake ? Math.round(providerStake / 100) : undefined}
+                    />
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-foreground-muted">
+                  <span>{signalProvider}</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{signalAction}</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{signalConfidence}% confidence</span>
+                </div>
               </div>
+
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => toggleBookmark(signalId)}
+                  aria-label={bookmarkedLabel}
+                  className={cn(
+                    "rounded-full p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+                    isBookmarked ? "bg-sky-500/15 text-sky-300" : "bg-white/5 text-slate-300 hover:bg-white/10"
+                  )}
+                >
+                  <Bookmark size={18} aria-hidden="true" />
+                </button>
                 <div className="relative" ref={shareMenuRef}>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowShareMenu((value) => !value)}
-                    aria-label={`Share ${pair} signal`}
+                    aria-label={`Share ${signalPair} signal`}
                     aria-expanded={showShareMenu}
                     className="h-8 w-8 p-0"
                   >
@@ -381,7 +376,7 @@ export function SignalCard({
                     </div>
                   )}
                 </div>
-                <SignalBadge signal={signal} />
+                <SignalBadge signal={signalAction} />
               </div>
             </div>
 
@@ -392,7 +387,7 @@ export function SignalCard({
               </div>
               <div>
                 <p className="text-muted-foreground">Confidence</p>
-                <p className="font-semibold">{confidence}%</p>
+                <p className="font-semibold">{signalConfidence}%</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Target</p>
@@ -400,17 +395,42 @@ export function SignalCard({
               </div>
               <div>
                 <p className="text-muted-foreground">ROI</p>
-                <p className={cn("font-semibold", isPositive ? "text-accent-success" : "text-accent-danger")}>{isPositive ? "+" : ""}{roi}%</p>
+                <p className={cn("font-semibold", isPositive ? "text-accent-success" : "text-accent-danger")}>
+                  {isPositive ? "+" : ""}{roi}%
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 text-sm sm:grid-cols-[minmax(0,1fr)_auto]">
+              <div className="space-y-1">
+                <p className="text-muted-foreground text-xs">Live delta</p>
+                <motion.div
+                  animate={{ scale: flash ? 1.02 : 1 }}
+                  transition={{ duration: 0.2 }}
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold",
+                    deltaPositive
+                      ? "bg-emerald-500/15 text-emerald-300"
+                      : "bg-red-500/15 text-red-300"
+                  )}
+                >
+                  <span>{deltaLabel}</span>
+                  <span className="text-foreground-muted">({deltaAbsLabel})</span>
+                </motion.div>
+              </div>
+              <div className="text-right text-[11px] text-foreground-muted">
+                {relativeTime}
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <DirectionIcon
-                size={16}
-                className={cn(
-                  signal === "BUY" ? "text-accent-success" : signal === "SELL" ? "text-accent-danger" : "text-foreground-subtle"
-                )}
-              />
+              {signalAction === "BUY" ? (
+                <TrendingUp size={16} className="text-accent-success" />
+              ) : signalAction === "SELL" ? (
+                <TrendingDown size={16} className="text-accent-danger" />
+              ) : (
+                <Minus size={16} className="text-foreground-subtle" />
+              )}
               <MiniChart data={roiHistory.map((p) => p.value)} className="flex-1" />
             </div>
 
@@ -426,15 +446,11 @@ export function SignalCard({
             )}
 
             {conflictReason && (
-              <SignalConflictNotice
-                reason={conflictReason}
-                onRefresh={onPass}
-                onChooseAnother={onPass}
-              />
+              <SignalConflictNotice reason={conflictReason} onRefresh={onPass} onChooseAnother={onPass} />
             )}
 
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <SignalTimestamp updatedAt={timestamp} />
+              <SignalTimestamp updatedAt={signalTimestamp} />
               <p className="text-xs text-muted-foreground">Swipe or use ← → keys</p>
             </div>
 
@@ -444,7 +460,7 @@ export function SignalCard({
                 size="sm"
                 onClick={handlePass}
                 className="flex-1"
-                aria-label={`Pass on ${signal} signal for ${pair}`}
+                aria-label={`Pass on ${signalAction} signal for ${signalPair}`}
               >
                 <X size={16} className="mr-1" />
                 Pass
@@ -454,7 +470,7 @@ export function SignalCard({
                 onClick={handleExecuteTrade}
                 disabled={modalOpen || (isPremium && !hasAccess) || !!conflictReason}
                 className="flex-1 active:scale-95"
-                aria-label={`Execute trade: ${signal} signal for ${pair} at ${executionPrice}${isDemoMode ? " (demo)" : ""}${isPremium && !hasAccess ? " (locked — stake required)" : ""}${conflictReason ? " (unavailable — signal conflict)" : ""}`}
+                aria-label={`Execute trade: ${signalAction} signal for ${signalPair} at ${executionPrice}${isDemoMode ? " (demo)" : ""}${isPremium && !hasAccess ? " (locked — stake required)" : ""}${conflictReason ? " (unavailable — signal conflict)" : ""}`}
               >
                 <Zap size={16} className="mr-1" />
                 {isDemoMode ? "Demo Trade" : "Execute Trade"}

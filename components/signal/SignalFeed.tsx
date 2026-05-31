@@ -11,6 +11,7 @@ import { SignalFilterBottomSheet } from "@/components/SignalFilterBottomSheet";
 import { PricePrecisionToggle } from "@/components/PricePrecisionToggle";
 import { ExpiredSignalBanner } from "@/components/ExpiredSignalBanner";
 import { useSignalFilterStore } from "@/store/useSignalFilterStore";
+import { useBookmarkStore } from "@/store/useBookmarkStore";
 import type { Signal } from "@/lib/signals";
 import { Search, X, SlidersHorizontal } from "lucide-react";
 import { useSyncStatus } from "@/hooks/useSyncStatus";
@@ -32,7 +33,15 @@ export function SignalFeed() {
   const feedRef = useRef<HTMLDivElement | null>(null);
 
   // #99: provider search state (persisted in filter store)
-  const { direction, asset, provider, sortOrder, setProvider } = useSignalFilterStore();
+  const {
+    direction,
+    asset,
+    provider,
+    bookmarkedOnly,
+    sortOrder,
+    setProvider,
+  } = useSignalFilterStore();
+  const bookmarkedIds = useBookmarkStore((state) => state.bookmarks);
   const [providerSearch, setProviderSearch] = useState(provider);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
@@ -69,21 +78,45 @@ export function SignalFeed() {
     [data]
   );
 
-  // #99: derive unique provider names from loaded signals
-  // Since Signal type has no provider field, we use ticker as a proxy for provider grouping
   const availableProviders = useMemo(
     () => [...new Set(allSignals.map((s) => s.ticker))].sort(),
     [allSignals]
   );
 
-  // #99: filter signals by provider search (matches ticker as provider identifier)
-  const filteredSignals = useMemo<Signal[]>(() => {
-    if (!providerSearch.trim()) return allSignals;
-    const q = providerSearch.trim().toLowerCase();
-    return allSignals.filter((s) => s.ticker.toLowerCase().includes(q));
-  }, [allSignals, providerSearch]);
+  const availableAssets = useMemo(
+    () => [...new Set(allSignals.map((s) => s.ticker))].sort(),
+    [allSignals]
+  );
 
-  // Sort signals according to the persistent sort order without losing scroll position
+  const filteredSignals = useMemo<Signal[]>(() => {
+    let filtered = [...allSignals];
+    const searchTerm = providerSearch.trim().toLowerCase();
+
+    if (direction !== "ALL") {
+      filtered = filtered.filter((s) => s.action === direction);
+    }
+
+    if (asset.trim()) {
+      const query = asset.trim().toLowerCase();
+      filtered = filtered.filter((s) => s.ticker.toLowerCase().includes(query));
+    }
+
+    if (provider.trim()) {
+      const query = provider.trim().toLowerCase();
+      filtered = filtered.filter((s) => s.ticker.toLowerCase().includes(query));
+    }
+
+    if (searchTerm) {
+      filtered = filtered.filter((s) => s.ticker.toLowerCase().includes(searchTerm));
+    }
+
+    if (bookmarkedOnly) {
+      filtered = filtered.filter((s) => bookmarkedIds.includes(s.id));
+    }
+
+    return filtered;
+  }, [allSignals, direction, asset, provider, providerSearch, bookmarkedOnly, bookmarkedIds]);
+
   const signals = useMemo<Signal[]>(() => {
     const copy = [...filteredSignals];
     if (sortOrder === "latest") {
@@ -209,9 +242,9 @@ export function SignalFeed() {
           >
             <SlidersHorizontal size={13} aria-hidden="true" />
             Filters
-            {(direction !== "ALL" || asset !== "" || provider !== "") && (
+            {(direction !== "ALL" || asset !== "" || provider !== "" || bookmarkedOnly || providerSearch.trim() !== "") && (
               <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-sky-500 text-[10px] font-bold text-white">
-                {[direction !== "ALL", asset !== "", provider !== ""].filter(Boolean).length}
+                {[direction !== "ALL", asset !== "", provider !== "", bookmarkedOnly, providerSearch.trim() !== ""].filter(Boolean).length}
               </span>
             )}
           </button>
@@ -219,7 +252,7 @@ export function SignalFeed() {
 
         {/* Desktop: inline filter panel */}
         <div className="hidden sm:block">
-          <SignalFeedFilters availableProviders={availableProviders} />
+          <SignalFeedFilters availableAssets={availableAssets} availableProviders={availableProviders} />
         </div>
       </div>
 
@@ -228,7 +261,7 @@ export function SignalFeed() {
         open={filterSheetOpen}
         onClose={() => setFilterSheetOpen(false)}
         availableProviders={availableProviders}
-        availableMarkets={availableProviders}
+        availableMarkets={availableAssets}
       />
 
       <div className="space-y-4" role="feed" aria-busy={isLoading} aria-label="Signal list">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { SlidersHorizontal, X } from "lucide-react";
+import { Bookmark, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   FilterDirection,
@@ -21,15 +21,30 @@ interface SignalFeedFiltersProps {
   availableProviders?: string[];
 }
 
+const MAX_QUICK_FILTERS = 4;
+
 export function SignalFeedFilters({
   availableAssets = [],
   availableProviders = [],
 }: SignalFeedFiltersProps) {
-  const { direction, asset, provider, setDirection, setAsset, setProvider, reset } =
-    useSignalFilterStore();
+  const {
+    direction,
+    asset,
+    provider,
+    bookmarkedOnly,
+    setDirection,
+    setAsset,
+    setProvider,
+    setBookmarkedOnly,
+    reset,
+  } = useSignalFilterStore();
   const assetInputRef = useRef<HTMLInputElement>(null);
 
-  const isActive = direction !== "ALL" || asset !== "" || provider !== "";
+  const isActive =
+    direction !== "ALL" || asset !== "" || provider !== "" || bookmarkedOnly;
+
+  const quickAssets = availableAssets.slice(0, MAX_QUICK_FILTERS);
+  const quickProviders = availableProviders.slice(0, MAX_QUICK_FILTERS);
 
   return (
     <section
@@ -37,7 +52,7 @@ export function SignalFeedFilters({
       className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4"
     >
       {/* Title row */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <span className="flex items-center gap-2 text-xs font-medium text-gray-400 uppercase tracking-wide">
           <SlidersHorizontal size={13} aria-hidden="true" />
           Filters
@@ -52,6 +67,57 @@ export function SignalFeedFilters({
             Clear
           </button>
         )}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setBookmarkedOnly(!bookmarkedOnly)}
+          aria-pressed={bookmarkedOnly}
+          className={cn(
+            "rounded-full px-3 py-1 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+            bookmarkedOnly
+              ? "bg-sky-500/15 text-sky-300 border border-sky-500/40"
+              : "bg-white/5 text-gray-300 border border-white/10 hover:border-white/20 hover:text-gray-200"
+          )}
+        >
+          <Bookmark size={14} aria-hidden="true" />
+          Bookmarked
+        </button>
+
+        {quickAssets.map((assetLabel) => (
+          <button
+            key={assetLabel}
+            type="button"
+            onClick={() => setAsset(asset === assetLabel ? "" : assetLabel)}
+            aria-pressed={asset === assetLabel}
+            className={cn(
+              "rounded-full px-3 py-1 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+              asset === assetLabel
+                ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/40"
+                : "bg-white/5 text-gray-300 border border-white/10 hover:border-white/20 hover:text-gray-200"
+            )}
+          >
+            {assetLabel}
+          </button>
+        ))}
+
+        {quickProviders.map((providerLabel) => (
+          <button
+            key={providerLabel}
+            type="button"
+            onClick={() => setProvider(provider === providerLabel ? "" : providerLabel)}
+            aria-pressed={provider === providerLabel}
+            className={cn(
+              "rounded-full px-3 py-1 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+              provider === providerLabel
+                ? "bg-orange-500/15 text-orange-300 border border-orange-500/40"
+                : "bg-white/5 text-gray-300 border border-white/10 hover:border-white/20 hover:text-gray-200"
+            )}
+          >
+            {providerLabel}
+          </button>
+        ))}
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -122,7 +188,6 @@ export function SignalFeedFilters({
           )}
         </div>
 
-        {/* Provider filter — only shown when provider data is available */}
         {availableProviders.length > 0 && (
           <select
             value={provider}
@@ -143,11 +208,11 @@ export function SignalFeedFilters({
       {/* Active filter summary */}
       {isActive && (
         <p className="text-[11px] text-gray-500" aria-live="polite">
-          Showing:{" "}
-          {[
+          Showing: {[
             direction !== "ALL" && `Direction: ${direction}`,
             asset && `Asset: ${asset}`,
             provider && `Provider: ${provider}`,
+            bookmarkedOnly && `Bookmarked only`,
           ]
             .filter(Boolean)
             .join(" · ")}
