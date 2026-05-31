@@ -7,9 +7,11 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { SignalEmptyState } from "@/components/SignalEmptyState";
 import { SignalFeedFilters } from "@/components/SignalFeedFilters";
+import { SignalSortControls } from "@/components/SignalSortControls";
+import { SignalFilterBottomSheet } from "@/components/SignalFilterBottomSheet";
 import { useSignalFilterStore } from "@/store/useSignalFilterStore";
 import type { Signal } from "@/lib/signals";
-import { Search, X } from "lucide-react";
+import { Search, X, SlidersHorizontal } from "lucide-react";
 
 interface SignalResponse {
   items: Signal[];
@@ -25,13 +27,14 @@ const STALE_TIME = 1000 * 60 * 5;
 
 export function SignalFeed() {
   const pathname = usePathname();
-  // #98: persist scroll position across navigation
+  // #99: persist scroll position across navigation
   const scrollPosRef = useRef<number>(0);
   const feedRef = useRef<HTMLDivElement | null>(null);
 
   // #99: provider search state (persisted in filter store)
-  const { direction, asset, provider, setProvider } = useSignalFilterStore();
+  const { direction, asset, provider, sortOrder, setProvider } = useSignalFilterStore();
   const [providerSearch, setProviderSearch] = useState(provider);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   const {
     data,
@@ -73,13 +76,28 @@ export function SignalFeed() {
   );
 
   // #99: filter signals by provider search (matches ticker as provider identifier)
-  const signals = useMemo<Signal[]>(() => {
+  const filteredSignals = useMemo<Signal[]>(() => {
     if (!providerSearch.trim()) return allSignals;
     const q = providerSearch.trim().toLowerCase();
     return allSignals.filter((s) => s.ticker.toLowerCase().includes(q));
   }, [allSignals, providerSearch]);
 
-  // #98: save scroll position before leaving
+  // Sort signals according to the persistent sort order without losing scroll position
+  const signals = useMemo<Signal[]>(() => {
+    const copy = [...filteredSignals];
+    if (sortOrder === "latest") {
+      copy.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    } else if (sortOrder === "hot") {
+      // Hot: highest confidence first (proxy for engagement/heat)
+      copy.sort((a, b) => b.confidence - a.confidence);
+    } else if (sortOrder === "relevant") {
+      // Relevant: BUY/SELL before HOLD, then by confidence
+      const actionWeight = (s: Signal) => (s.action === "HOLD" ? 0 : 1);
+      copy.sort((a, b) => actionWeight(b) - actionWeight(a) || b.confidence - a.confidence);
+    }
+    return copy;
+  }, [filteredSignals, sortOrder]);
+
   useEffect(() => {
     const saved = sessionStorage.getItem(`scroll:${pathname}`);
     if (saved) window.scrollTo(0, parseInt(saved, 10));
@@ -126,13 +144,17 @@ export function SignalFeed() {
             Browse the latest actionable signals with seamless infinite scrolling.
           </p>
         </div>
-        {/* #98: show consistent loading state */}
-        <div className="text-right text-sm text-foreground-muted" aria-live="polite" aria-atomic="true">
-          {isFetching && !allSignals.length
-            ? "Loading signals..."
-            : isFetching
-            ? "Refreshing..."
-            : "Scroll down to load more."}
+        <div className="flex flex-col items-end gap-2">
+          {/* Sort controls — persistent across browsing */}
+          <SignalSortControls />
+          {/* #98: show consistent loading state */}
+          <div className="text-right text-sm text-foreground-muted" aria-live="polite" aria-atomic="true">
+            {isFetching && !allSignals.length
+              ? "Loading signals..."
+              : isFetching
+              ? "Refreshing..."
+              : "Scroll down to load more."}
+          </div>
         </div>
       </div>
 
@@ -170,10 +192,39 @@ export function SignalFeed() {
         )}
       </div>
 
-      {/* Filters */}
+      {/* Filters — desktop: inline panel; mobile: bottom sheet trigger */}
       <div className="mb-4">
-        <SignalFeedFilters availableProviders={availableProviders} />
+        {/* Mobile filter trigger button */}
+        <div className="flex items-center gap-2 sm:hidden mb-3">
+          <button
+            type="button"
+            onClick={() => setFilterSheetOpen(true)}
+            aria-label="Open signal filters"
+            className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:border-white/20 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+          >
+            <SlidersHorizontal size={13} aria-hidden="true" />
+            Filters
+            {(direction !== "ALL" || asset !== "" || provider !== "") && (
+              <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-sky-500 text-[10px] font-bold text-white">
+                {[direction !== "ALL", asset !== "", provider !== ""].filter(Boolean).length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Desktop: inline filter panel */}
+        <div className="hidden sm:block">
+          <SignalFeedFilters availableProviders={availableProviders} />
+        </div>
       </div>
+
+      {/* Mobile bottom sheet */}
+      <SignalFilterBottomSheet
+        open={filterSheetOpen}
+        onClose={() => setFilterSheetOpen(false)}
+        availableProviders={availableProviders}
+        availableMarkets={availableProviders}
+      />
 
       <div className="space-y-4" role="feed" aria-busy={isLoading} aria-label="Signal list">
         {isError && (

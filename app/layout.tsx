@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { Navbar } from "@/components/Navbar";
 import { TradeStatusBanner } from "@/components/TradeStatusBanner";
+import { DevPerfOverlay } from "@/components/DevPerfOverlay";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -40,6 +41,7 @@ export default function RootLayout({
           <Navbar />
           {children}
           <TradeStatusBanner />
+          <DevPerfOverlay />
         </Providers>
       </body>
     </html>

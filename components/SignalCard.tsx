@@ -17,6 +17,7 @@ import { TradeModal } from "@/components/TradeModal";
 import { cn } from "@/lib/utils";
 import { MiniChart } from "./chart/MiniChart";
 import { PremiumSignalBadge } from "@/components/PremiumSignalBadge";
+import { ProviderRatingBadge } from "@/components/ProviderRatingBadge";
 import { useDemoModeStore } from "@/store/useDemoModeStore";
 import analyticsService from "@/services/analytics";
 
@@ -302,11 +303,26 @@ export function SignalCard({
             aria-label={`${signal} signal for ${pair} at ${executionPrice} with ${confidence}% confidence`}
           >
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold text-base sm:text-lg">{pair}</span>
                 {isPremium && (
                   <PremiumSignalBadge hasAccess={hasAccess} requiredStake={requiredStake} />
                 )}
+                {/* Provider rating — compact on mobile, full on sm+ */}
+                <span className="sm:hidden">
+                  <ProviderRatingBadge
+                    trustScore={providerReputation}
+                    winRate={providerReputation}
+                    compact
+                  />
+                </span>
+                <span className="hidden sm:inline-flex">
+                  <ProviderRatingBadge
+                    trustScore={providerReputation}
+                    winRate={providerReputation}
+                    totalSignals={providerStake ? Math.round(providerStake / 100) : undefined}
+                  />
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative" ref={shareMenuRef}>
