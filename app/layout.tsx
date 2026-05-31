@@ -5,6 +5,7 @@ import { Providers } from "./providers";
 import { Navbar } from "@/components/Navbar";
 import { TradeStatusBanner } from "@/components/TradeStatusBanner";
 import { DevPerfOverlay } from "@/components/DevPerfOverlay";
+import { ScrollRestoration } from "@/components/ScrollRestoration";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -38,6 +39,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
         <Providers>
+          <ScrollRestoration />
           <Navbar />
           {children}
           <TradeStatusBanner />
