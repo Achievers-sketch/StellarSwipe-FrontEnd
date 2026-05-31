@@ -7,6 +7,8 @@ export interface Signal {
   confidence: number;
   details: string;
   timestamp: string;
+  /** ISO timestamp after which the signal is considered expired / no longer actionable */
+  expiresAt?: string;
 }
 
 export interface SignalFeedPage {
@@ -34,6 +36,8 @@ const signalDetails = [
 ];
 
 const TOTAL_SIGNALS = 50;
+// Signals older than this are considered expired (30 minutes)
+const SIGNAL_TTL_MS = 30 * 60 * 1000;
 
 export function buildSignalPage(page = 1, pageSize = 10): SignalFeedPage {
   const allSignals: Signal[] = Array.from({ length: TOTAL_SIGNALS }, (_, index) => {
@@ -41,7 +45,10 @@ export function buildSignalPage(page = 1, pageSize = 10): SignalFeedPage {
     const action = signalActions[index % signalActions.length];
     const details = signalDetails[index % signalDetails.length];
     const confidence = 60 + ((index * 7) % 40);
-    const timestamp = new Date(Date.now() - index * 7 * 60 * 1000).toISOString();
+    const createdAt = new Date(Date.now() - index * 7 * 60 * 1000);
+    const timestamp = createdAt.toISOString();
+    // Signals expire SIGNAL_TTL_MS after creation
+    const expiresAt = new Date(createdAt.getTime() + SIGNAL_TTL_MS).toISOString();
 
     return {
       id: `signal-${index + 1}`,
@@ -50,6 +57,7 @@ export function buildSignalPage(page = 1, pageSize = 10): SignalFeedPage {
       confidence,
       details,
       timestamp,
+      expiresAt,
     };
   });
 

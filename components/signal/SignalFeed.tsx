@@ -10,6 +10,7 @@ import { SignalFeedFilters } from "@/components/SignalFeedFilters";
 import { SignalSortControls } from "@/components/SignalSortControls";
 import { SignalFilterBottomSheet } from "@/components/SignalFilterBottomSheet";
 import { PricePrecisionToggle } from "@/components/PricePrecisionToggle";
+import { ExpiredSignalBanner } from "@/components/ExpiredSignalBanner";
 import { useSignalFilterStore } from "@/store/useSignalFilterStore";
 import type { Signal } from "@/lib/signals";
 import { Search, X, SlidersHorizontal } from "lucide-react";
@@ -261,35 +262,52 @@ export function SignalFeed() {
             ))}
           </div>
         ) : (
-          signals.map((signal) => (
-            // #101: accessible article with descriptive aria-label
-            <article
-              key={signal.id}
-              aria-label={`${signal.ticker} ${signal.action} signal, ${signal.confidence}% confidence`}
-              className="rounded-3xl border border-white/10 bg-slate-950/90 p-4 shadow-sm shadow-slate-950/20 transition hover:-translate-y-0.5 sm:p-6"
-            >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-foreground-muted">
-                    <time dateTime={signal.timestamp}>
-                      {new Date(signal.timestamp).toLocaleString()}
-                    </time>
-                  </p>
-                  <h3 className="mt-2 text-base font-semibold tracking-tight text-white sm:text-xl">
-                    {signal.ticker} • {signal.action}
-                  </h3>
-                </div>
-                {/* #101: confidence badge with aria-label */}
+          signals.map((signal) => {
+            const isExpired =
+              !!signal.expiresAt && new Date(signal.expiresAt) < new Date();
+
+            return (
+              // #101: accessible article with descriptive aria-label
+              <article
+                key={signal.id}
+                aria-label={`${signal.ticker} ${signal.action} signal, ${signal.confidence}% confidence${isExpired ? ", expired" : ""}`}
+                className="rounded-3xl border border-white/10 bg-slate-950/90 p-4 shadow-sm shadow-slate-950/20 transition hover:-translate-y-0.5 sm:p-6"
+              >
+                {/* Expired banner — shown above content, clearly visible */}
+                {isExpired && (
+                  <div className="mb-3">
+                    <ExpiredSignalBanner onRefresh={() => refetch()} />
+                  </div>
+                )}
+
                 <div
-                  className="shrink-0 rounded-full border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-sky-300 sm:px-4 sm:py-2 sm:text-sm"
-                  aria-label={`Confidence: ${signal.confidence} percent`}
+                  className={isExpired ? "opacity-60 pointer-events-none select-none" : ""}
+                  aria-hidden={isExpired}
                 >
-                  Confidence {signal.confidence}%
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.3em] text-foreground-muted">
+                        <time dateTime={signal.timestamp}>
+                          {new Date(signal.timestamp).toLocaleString()}
+                        </time>
+                      </p>
+                      <h3 className="mt-2 text-base font-semibold tracking-tight text-white sm:text-xl">
+                        {signal.ticker} • {signal.action}
+                      </h3>
+                    </div>
+                    {/* #101: confidence badge with aria-label */}
+                    <div
+                      className="shrink-0 rounded-full border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-sky-300 sm:px-4 sm:py-2 sm:text-sm"
+                      aria-label={`Confidence: ${signal.confidence} percent`}
+                    >
+                      Confidence {signal.confidence}%
+                    </div>
+                  </div>
+                  <p className="mt-4 text-sm leading-6 text-foreground-muted">{signal.details}</p>
                 </div>
-              </div>
-              <p className="mt-4 text-sm leading-6 text-foreground-muted">{signal.details}</p>
-            </article>
-          ))
+              </article>
+            );
+          })
         )}
       </div>
 
