@@ -122,87 +122,74 @@ export default function AppPage() {
 
   return (
     <PageTransition>
-      <main className="flex min-h-screen flex-col items-center gap-6 p-4 sm:gap-8 sm:p-8 bg-gray-950">
-        {/* Header with wallet */}
-        <header className="w-full max-w-md flex items-center justify-between">
-          <h1 className="text-xl font-bold tracking-tight text-white">StellarSwipe</h1>
+      <main className="min-h-screen bg-gray-950 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        {/* Header — full width at all breakpoints */}
+        <header className="mx-auto mb-6 flex w-full max-w-7xl items-center justify-between sm:mb-8">
+          <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">StellarSwipe</h1>
           <div className="flex items-center gap-3">
-            <p className="text-sm text-foreground-muted font-mono">
+            <p className="hidden text-sm font-mono text-foreground-muted sm:block">
               {publicKey?.slice(0, 8)}...{publicKey?.slice(-8)}
             </p>
             <WalletDropdown />
           </div>
         </header>
 
-        {/* On-chain confirmation status */}
-        <div className="w-full max-w-md">
+        {/* On-chain confirmation status — full width banner */}
+        <div className="mx-auto mb-4 w-full max-w-7xl">
           <OnChainConfirmationStatus
             transactionHash={pendingTransaction?.hash}
             status={pendingTransaction?.status}
           />
         </div>
 
-        {/* Signal Feed */}
-        <div className="w-full max-w-md space-y-4">
-          <SignalFeedFilters
-            availableAssets={availableAssets}
-            availableProviders={availableProviders}
-          />
+        {/* Dashboard grid:
+            mobile  → single column, widgets stacked
+            tablet  → two columns: signal feed | portfolio sidebar
+            desktop → wider two-column with more breathing room */}
+        <div className="mx-auto w-full max-w-7xl">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_320px] lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8">
 
-          <div className="rounded-3xl border border-white/10 bg-card p-4 shadow-sm">
-            {isLoading && (
-              <div className="flex justify-center py-10">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            {/* Left column — signal feed */}
+            <div className="flex flex-col gap-4 min-w-0">
+              <SignalFeedFilters
+                availableAssets={availableAssets}
+                availableProviders={availableProviders}
+              />
+
+              <div className="rounded-3xl border border-white/10 bg-card p-4 shadow-sm sm:p-5">
+                {isLoading && (
+                  <div className="flex justify-center py-10">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+
+                {error && (
+                  <SignalErrorState error={error as Error} onRetry={refetch} />
+                )}
+
+                {filteredSignals && filteredSignals.length === 0 && (
+                  <p className="text-center text-sm text-muted-foreground">No signals available.</p>
+                )}
+
+                {filteredSignals && filteredSignals.length > 0 && (
+                  <ul className="flex flex-col gap-3" role="list" aria-label="Signal list">
+                    {filteredSignals.map((signal) => (
+                      <li
+                        key={signal.id}
+                        className="rounded-xl border p-3 text-sm flex flex-wrap items-center justify-between gap-2 sm:p-4"
+                      >
+                        <span className="font-medium text-base sm:text-sm">{signal.asset}</span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${signal.action === "BUY" ? "bg-green-500/15 text-green-400" : signal.action === "SELL" ? "bg-red-500/15 text-red-400" : "bg-slate-500/15 text-slate-400"}`}
+                        >
+                          {signal.action}
+                        </span>
+                        <span className="text-muted-foreground text-xs">{signal.confidence}% confidence</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-            )}
-
-            {error && (
-              <SignalErrorState error={error as Error} onRetry={refetch} />
-            )}
-
-            {filteredSignals && filteredSignals.length === 0 && (
-              <p className="text-center text-sm text-muted-foreground">No signals available.</p>
-            )}
-
-            {filteredSignals && filteredSignals.length > 0 && (
-              <ul className="flex flex-col gap-3">
-                {filteredSignals.map((signal) => (
-                  <li
-                    key={signal.id}
-                    className="rounded-xl border p-4 text-sm flex justify-between items-center"
-                  >
-                    <span className="font-medium">{signal.asset}</span>
-                    <span
-                      className={signal.action === "BUY" ? "text-green-500" : "text-red-500"}
-                    >
-                      {signal.action}
-                    </span>
-                    <span className="text-muted-foreground">{signal.confidence}%</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-
-        {/* Portfolio Summary + Allocation */}
-        <div className="w-full max-w-md space-y-3">
-          <PortfolioSummaryCards />
-          <PositionStopLossControl />
-          <div>
-            <PortfolioAllocationChart />
-          </div>
-        </div>
-
-        {/* Transaction activity feed */}
-        <div className="w-full max-w-md">
-          <TransactionActivityFeed />
-        </div>
-
-        {/* P&L Widget */}
-        <div className="w-full max-w-md">
-          <PnLWidget />
-        </div>
 
         {/* Signal Card demo */}
         <div className="flex w-full max-w-md flex-col items-center gap-3 px-4 sm:px-0">
