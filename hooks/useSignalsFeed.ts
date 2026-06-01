@@ -3,17 +3,47 @@
 import { useQuery } from "@tanstack/react-query";
 import { useDemoModeStore } from "@/store/useDemoModeStore";
 import { buildSignalPage, Signal, SignalFeedPage } from "@/lib/signals";
+import { NetworkError, ServerError } from "@/lib/api";
 
 export function useSignalsFeed() {
   const { isDemoMode } = useDemoModeStore();
 
   const fetchLiveSignals = async (): Promise<Signal[]> => {
-    const response = await fetch("/api/signals");
-    if (!response.ok) {
-      throw new Error("Failed to fetch signals");
+    let response: Response;
+    
+    try {
+      response = await fetch("/api/signals", {
+        headers: {
+          "Cache-Control": "no-cache",
+        },
+      });
+    } catch (err) {
+      // Network error
+      const networkError = new NetworkError();
+      throw networkError;
     }
-    const page: SignalFeedPage = await response.json();
-    return page.items;
+
+    if (!response.ok) {
+      // Server error
+      const errorData = await response.text();
+      const serverError = new ServerError(response.status);
+      // Enhance error message with status
+      serverError.message = `Server error (${response.status}): ${
+        errorData || "Unable to load signals"
+      }. Please try again later.`;
+      throw serverError;
+    }
+
+    try {
+      const page: SignalFeedPage = await response.json();
+      return page.items;
+    } catch (err) {
+      // JSON parsing error
+      const parseError = new Error(
+        "Failed to parse signal data. This might indicate a service issue."
+      );
+      throw parseError;
+    }
   };
 
   const fetchDemoSignals = async (): Promise<Signal[]> => {
@@ -21,10 +51,12 @@ export function useSignalsFeed() {
     return page.items;
   };
 
-  const { data: signals, isLoading, error, refetch } = useQuery({
+  const { data: signals, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ["signals", isDemoMode ? "demo" : "live"],
     queryFn: isDemoMode ? fetchDemoSignals : fetchLiveSignals,
     staleTime: 60000,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 10000),
   });
 
   return {
@@ -32,6 +64,7 @@ export function useSignalsFeed() {
     isLoading,
     error,
     refetch,
+    isRefetching,
     isDemoMode,
   };
 }

@@ -5,12 +5,14 @@ import {
   motion,
   useMotionValue,
   useTransform,
+  useReducedMotion,
   AnimatePresence,
   type PanInfo,
 } from "framer-motion";
 import {
   Bookmark,
   Check,
+  ChevronDown,
   Minus,
   Share2,
   TrendingDown,
@@ -57,6 +59,7 @@ interface SignalCardProps {
   hasAccess?: boolean;
   requiredStake?: number;
   conflictReason?: SignalConflictReason;
+  portfolioBalance?: number;
   onTrade?: (pair: string, price: number) => void;
   onPass?: () => void;
 }
@@ -93,6 +96,7 @@ export function SignalCard({
   hasAccess = true,
   requiredStake = 1000,
   conflictReason,
+  portfolioBalance,
   onTrade,
   onPass,
 }: SignalCardProps) {
@@ -101,6 +105,8 @@ export function SignalCard({
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [copiedFeedback, setCopiedFeedback] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [detailsExpanded, setDetailsExpanded] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
   const { isDemoMode } = useDemoModeStore();
   const fmt = usePriceFormat();
   const executingRef = useRef(false);
@@ -434,8 +440,49 @@ export function SignalCard({
               <MiniChart data={roiHistory.map((p) => p.value)} className="flex-1" />
             </div>
 
-            <p className="text-sm text-muted-foreground leading-relaxed">{analysis}</p>
+            {/* ── Issue #102: Expandable detail section with smooth animation ── */}
+            <button
+              type="button"
+              onClick={() => setDetailsExpanded((prev) => !prev)}
+              aria-expanded={detailsExpanded}
+              aria-controls={`signal-details-${signalId}`}
+              className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-foreground-muted transition-colors hover:border-white/20 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+            >
+              <span>{detailsExpanded ? "Hide details" : "Show details"}</span>
+              <motion.span
+                animate={{ rotate: detailsExpanded ? 180 : 0 }}
+                transition={
+                  shouldReduceMotion
+                    ? { duration: 0 }
+                    : { duration: 0.2, ease: "easeInOut" }
+                }
+                aria-hidden="true"
+              >
+                <ChevronDown size={14} />
+              </motion.span>
+            </button>
 
+            <AnimatePresence initial={false}>
+              {detailsExpanded && (
+                <motion.div
+                  id={`signal-details-${signalId}`}
+                  key="signal-details"
+                  initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, height: 0 }}
+                  animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, height: "auto" }}
+                  exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
+                  transition={
+                    shouldReduceMotion
+                      ? { duration: 0 }
+                      : { duration: 0.28, ease: [0.4, 0, 0.2, 1] }
+                  }
+                  style={{ overflow: "hidden" }}
+                >
+                  <div className="flex flex-col gap-3 pt-1">
+                    <p className="text-sm text-muted-foreground leading-relaxed">{analysis}</p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             {isPremium && !hasAccess && (
               <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-2.5 text-sm">
                 <p className="font-medium text-accent-warning">Premium signal locked</p>
@@ -483,6 +530,7 @@ export function SignalCard({
             onClose={handleModalClose}
             onConfirm={handleModalConfirm}
             marketPrice={executionPrice}
+            portfolioBalance={portfolioBalance}
           />
         </motion.div>
       )}

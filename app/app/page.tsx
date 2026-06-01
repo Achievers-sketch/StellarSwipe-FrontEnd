@@ -191,39 +191,28 @@ export default function AppPage() {
                 )}
               </div>
 
-              {/* Signal Card — full width on mobile, contained in left col on tablet+ */}
-              <div className="flex flex-col gap-3">
-                <SignalCard
-                  loading={loading}
-                  onTrade={handleTrade}
-                  providerStake={50000}
-                  providerReputation={85}
-                />
-                <div className="flex gap-3">
-                  <button
-                    onClick={toggleLoading}
-                    className="text-xs text-foreground-subtle hover:text-foreground-muted underline transition-colors"
-                  >
-                    Preview skeleton
-                  </button>
-                  <button
-                    onClick={() => setModalOpen(true)}
-                    className="text-xs text-foreground-subtle hover:text-foreground-muted underline transition-colors"
-                  >
-                    Open trade modal
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Right column — portfolio sidebar */}
-            <aside className="flex flex-col gap-4 min-w-0" aria-label="Portfolio sidebar">
-              <PortfolioSummaryCards />
-              <PositionStopLossControl />
-              <PortfolioAllocationChart />
-              <PnLWidget />
-              <TransactionActivityFeed />
-            </aside>
+        {/* Signal Card demo */}
+        <div className="flex w-full max-w-md flex-col items-center gap-3 px-4 sm:px-0">
+          <SignalCard
+            loading={loading}
+            onTrade={handleTrade}
+            providerStake={50000}
+            providerReputation={85}
+            portfolioBalance={assets.reduce((sum, asset) => sum + asset.value, 0)}
+          />
+          <div className="flex gap-3">
+            <button
+              onClick={toggleLoading}
+              className="text-xs text-foreground-subtle hover:text-foreground-muted underline transition-colors"
+            >
+              Preview skeleton
+            </button>
+            <button
+              onClick={() => setModalOpen(true)}
+              className="text-xs text-foreground-subtle hover:text-foreground-muted underline transition-colors"
+            >
+              Open trade modal
+            </button>
           </div>
         </div>
 
@@ -232,6 +221,7 @@ export default function AppPage() {
           onClose={() => setModalOpen(false)}
           marketPrice={marketPrice}
           walletBalance={250}
+          portfolioBalance={assets.reduce((sum, asset) => sum + asset.value, 0)}
         />
       </main>
     </PageTransition>

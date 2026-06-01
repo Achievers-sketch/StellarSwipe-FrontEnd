@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Info } from "lucide-react";
+import { X, Info, AlertCircle } from "lucide-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useDemoModeStore } from "@/store/useDemoModeStore";
+import { usePositionLimitStore } from "@/store/usePositionLimitStore";
 import { FeeDisclosurePanel } from "@/components/FeeDisclosurePanel";
 import { SlippageWarning } from "@/components/SlippageWarning";
 import { usePriceFormat } from "@/hooks/usePriceFormat";
@@ -23,6 +24,7 @@ interface TradeModalProps {
   onConfirm?: (details: PositionDetails) => void;
   walletBalance?: number;
   marketPrice?: number;
+  portfolioBalance?: number;
 }
 
 const mockBuildTx = (order: object) =>
@@ -47,6 +49,7 @@ export function TradeModal({
   onConfirm,
   walletBalance = 250,
   marketPrice = 0.4821,
+  portfolioBalance = 0,
 }: TradeModalProps) {
   const [type, setType] = useState<OrderType>("LIMIT");
   const [limitPrice, setLimitPrice] = useState("");
@@ -58,10 +61,18 @@ export function TradeModal({
   // Slippage warning: shown when estimated slippage exceeds threshold
   const [slippageAcknowledged, setSlippageAcknowledged] = useState(false);
   const { isDemoMode } = useDemoModeStore();
+  const { enabled: positionLimitEnabled, percentage: positionLimitPercentage } =
+    usePositionLimitStore();
   const fmt = usePriceFormat();
 
   // Live-region ref for announcing order-type changes to screen readers
   const liveRegionRef = useRef<HTMLSpanElement>(null);
+
+  // Calculate position limit in USD value
+  const positionLimitInUSD = useMemo(() => {
+    if (!positionLimitEnabled || !portfolioBalance) return null;
+    return (portfolioBalance * positionLimitPercentage) / 100;
+  }, [positionLimitEnabled, portfolioBalance, positionLimitPercentage]);
 
   const limitPriceError =
     type === "LIMIT" && touched.limitPrice ? validateField(limitPrice, "Limit price") : "";
@@ -75,9 +86,17 @@ export function TradeModal({
   const price = type === "MARKET" ? marketPrice : parseFloat(limitPrice) || 0;
   const total = price * (parseFloat(amount) || 0);
   const insufficient = total > walletBalance;
+  const exceedsPositionLimit =
+    positionLimitEnabled && positionLimitInUSD !== null && total > positionLimitInUSD;
   const hasErrors = !!amountError || (type === "LIMIT" && !!limitPriceError);
   const disabled =
-    !amount || (type === "LIMIT" && !limitPrice) || insufficient || submitting || hasErrors || showSlippageWarning;
+    !amount ||
+    (type === "LIMIT" && !limitPrice) ||
+    insufficient ||
+    exceedsPositionLimit ||
+    submitting ||
+    hasErrors ||
+    showSlippageWarning;
 
   // Estimate slippage: market orders use a fixed proxy; limit orders use
   // the deviation between the user's limit price and the current market price.
@@ -380,6 +399,24 @@ export function TradeModal({
                 </div>
               )}
 
+              {/* Position limit warning */}
+              {exceedsPositionLimit && positionLimitInUSD !== null && (
+                <div
+                  role="alert"
+                  className="mt-2 rounded-md border border-accent-warning/40 bg-accent-warning/10 p-3 text-sm"
+                >
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-4 w-4 text-accent-warning flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-accent-warning">Position limit exceeded</p>
+                      <p className="text-foreground-muted text-xs mt-1">
+                        This trade (${total.toFixed(2)}) exceeds your {positionLimitPercentage}% position limit (${positionLimitInUSD.toFixed(2)}). Reduce the amount or disable position limits.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Stop-loss slider */}
               <div>
                 <div className="flex justify-between text-xs text-foreground-muted mb-1">
@@ -513,6 +550,8 @@ export function TradeModal({
               {disabled
                 ? insufficient
                   ? "Cannot place order: insufficient balance"
+                  : exceedsPositionLimit
+                  ? `Cannot place order: exceeds position limit of $${positionLimitInUSD?.toFixed(2)}`
                   : "Cannot place order: please fill in all required fields"
                 : `Place ${type.toLowerCase()} order for ${amount || 0} XLM at ${
                     type === "MARKET" ? "market price" : `${limitPrice || 0} USDC`

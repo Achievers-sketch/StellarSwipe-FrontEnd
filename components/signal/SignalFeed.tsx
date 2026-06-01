@@ -275,7 +275,18 @@ export function SignalFeed() {
         )}
 
         {!isLoading && !isError && signals.length === 0 && (
-          <SignalEmptyState onRefresh={() => refetch()} />
+          <SignalEmptyState
+            variant={
+              direction !== "ALL" ||
+              asset.trim() !== "" ||
+              provider.trim() !== "" ||
+              bookmarkedOnly ||
+              providerSearch.trim() !== ""
+                ? "no-results"
+                : "no-signals"
+            }
+            onRefresh={() => refetch()}
+          />
         )}
 
         {/* #98: skeleton while loading — consistent loading state */}
