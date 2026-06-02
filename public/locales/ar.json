@@ -1,0 +1,63 @@
+{
+  "common": {
+    "loading": "جار التحميل",
+    "error": "خطأ",
+    "success": "نجاح",
+    "close": "إغلاق",
+    "dismiss": "رفض",
+    "retry": "إعادة المحاولة",
+    "back": "رجوع",
+    "next": "التالي",
+    "continue": "متابعة",
+    "cancel": "إلغاء"
+  },
+  "header": {
+    "title": "StellarSwipe",
+    "dashboard": "لوحة التحكم",
+    "leaderboard": "لوحة المتصدرين",
+    "portfolio": "المحفظة",
+    "profile": "الملف الشخصي",
+    "settings": "الإعدادات"
+  },
+  "signals": {
+    "signal_feed": "تغذية الإشارات",
+    "buy_signal": "إشارة شراء",
+    "sell_signal": "إشارة بيع",
+    "execution_price": "سعر التنفيذ",
+    "confidence": "الثقة",
+    "target": "الهدف",
+    "roi": "العائد على الاستثمار",
+    "swipe_or_use_keys": "اسحب أو استخدم مفاتيح ← →",
+    "pass": "تخطي",
+    "execute_trade": "تنفيذ الصفقة",
+    "demo_trade": "صفقة تجريبية",
+    "share": "مشاركة"
+  },
+  "trade": {
+    "trade_executed": "تم تنفيذ الصفقة",
+    "trade_failed": "فشلت الصفقة",
+    "swap_completed": "تمت عملية التبادل بنجاح",
+    "view_portfolio": "عرض المحفظة",
+    "continue_swiping": "متابعة السحب",
+    "transaction": "المعاملة"
+  },
+  "notifications": {
+    "enable_notifications": "تفعيل الإشعارات",
+    "notifications_disabled": "الإشعارات محجوبة. تحقق من إعدادات المتصفح.",
+    "trade_success": "نجحت الصفقة",
+    "trade_failure": "فشلت الصفقة"
+  },
+  "wallet": {
+    "connect_wallet": "ربط المحفظة",
+    "disconnect_wallet": "فصل المحفظة",
+    "wallet_connected": "تم ربط المحفظة",
+    "wallet_disconnected": "تم فصل المحفظة",
+    "connection_failed": "فشل الاتصال بالمحفظة",
+    "connection_declined": "تم رفض طلب الاتصال"
+  },
+  "footer": {
+    "about": "حول",
+    "analytics": "التحليلات",
+    "documentation": "الوثائق"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "common": {
+    "loading": "加载中",
+    "error": "错误",
+    "success": "成功",
+    "close": "关闭",
+    "dismiss": "忽略",
+    "retry": "重试",
+    "back": "返回",
+    "next": "下一步",
+    "continue": "继续",
+    "cancel": "取消"
+  },
+  "header": {
+    "title": "StellarSwipe",
+    "dashboard": "仪表板",
+    "leaderboard": "排行榜",
+    "portfolio": "投资组合",
+    "profile": "个人资料",
+    "settings": "设置"
+  },
+  "signals": {
+    "signal_feed": "信号流",
+    "buy_signal": "买入信号",
+    "sell_signal": "卖出信号",
+    "execution_price": "执行价格",
+    "confidence": "置信度",
+    "target": "目标",
+    "roi": "收益率",
+    "swipe_or_use_keys": "滑动或使用 ← → 键",
+    "pass": "跳过",
+    "execute_trade": "执行交易",
+    "demo_trade": "演示交易",
+    "share": "分享"
+  },
+  "trade": {
+    "trade_executed": "交易已执行",
+    "trade_failed": "交易失败",
+    "swap_completed": "您的兑换已成功完成",
+    "view_portfolio": "查看投资组合",
+    "continue_swiping": "继续滑动",
+    "transaction": "交易"
+  },
+  "notifications": {
+    "enable_notifications": "启用通知",
+    "notifications_disabled": "通知已被屏蔽，请检查浏览器设置。",
+    "trade_success": "交易成功",
+    "trade_failure": "交易失败"
+  },
+  "wallet": {
+    "connect_wallet": "连接钱包",
+    "disconnect_wallet": "断开钱包",
+    "wallet_connected": "钱包已连接",
+    "wallet_disconnected": "钱包已断开",
+    "connection_failed": "无法连接钱包",
+    "connection_declined": "连接请求已被拒绝"
+  },
+  "footer": {
+    "about": "关于",
+    "analytics": "分析",
+    "documentation": "文档"
+  }
+}

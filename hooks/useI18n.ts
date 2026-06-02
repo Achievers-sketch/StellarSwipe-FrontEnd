@@ -4,14 +4,14 @@ import {
   getCurrentLocale,
   getSupportedLocales,
   setLocale,
+  isRTL,
+  formatNumber,
+  formatDate,
+  formatCurrency,
   type Locale,
   initI18n,
 } from '@/lib/i18n';
 
-/**
- * Hook for using i18n in components
- * Provides translation function and locale management
- */
 export function useI18n() {
   const [locale, setLocalLocale] = useState<Locale>('en');
   const [isInitialized, setIsInitialized] = useState(false);
@@ -22,6 +22,14 @@ export function useI18n() {
       setIsInitialized(true);
     });
   }, []);
+
+  // Apply dir attribute to <html> for RTL support
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.dir = isRTL(locale) ? 'rtl' : 'ltr';
+      document.documentElement.lang = locale;
+    }
+  }, [locale]);
 
   const changeLocale = async (newLocale: Locale) => {
     await setLocale(newLocale);
@@ -34,5 +42,9 @@ export function useI18n() {
     setLocale: changeLocale,
     supportedLocales: getSupportedLocales(),
     isInitialized,
+    isRTL: isRTL(locale),
+    formatNumber,
+    formatDate,
+    formatCurrency,
   };
 }

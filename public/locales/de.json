@@ -1,0 +1,63 @@
+{
+  "common": {
+    "loading": "Laden",
+    "error": "Fehler",
+    "success": "Erfolg",
+    "close": "Schließen",
+    "dismiss": "Verwerfen",
+    "retry": "Wiederholen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "continue": "Fortfahren",
+    "cancel": "Abbrechen"
+  },
+  "header": {
+    "title": "StellarSwipe",
+    "dashboard": "Dashboard",
+    "leaderboard": "Rangliste",
+    "portfolio": "Portfolio",
+    "profile": "Profil",
+    "settings": "Einstellungen"
+  },
+  "signals": {
+    "signal_feed": "Signal-Feed",
+    "buy_signal": "Kaufsignal",
+    "sell_signal": "Verkaufssignal",
+    "execution_price": "Ausführungspreis",
+    "confidence": "Konfidenz",
+    "target": "Ziel",
+    "roi": "Rendite",
+    "swipe_or_use_keys": "Wischen oder ← → Tasten verwenden",
+    "pass": "Überspringen",
+    "execute_trade": "Trade ausführen",
+    "demo_trade": "Demo-Trade",
+    "share": "Teilen"
+  },
+  "trade": {
+    "trade_executed": "Trade ausgeführt",
+    "trade_failed": "Trade fehlgeschlagen",
+    "swap_completed": "Ihr Tausch wurde erfolgreich abgeschlossen",
+    "view_portfolio": "Portfolio anzeigen",
+    "continue_swiping": "Weiter wischen",
+    "transaction": "Transaktion"
+  },
+  "notifications": {
+    "enable_notifications": "Benachrichtigungen aktivieren",
+    "notifications_disabled": "Benachrichtigungen blockiert. Browsereinstellungen prüfen.",
+    "trade_success": "Trade erfolgreich",
+    "trade_failure": "Trade fehlgeschlagen"
+  },
+  "wallet": {
+    "connect_wallet": "Wallet verbinden",
+    "disconnect_wallet": "Wallet trennen",
+    "wallet_connected": "Wallet verbunden",
+    "wallet_disconnected": "Wallet getrennt",
+    "connection_failed": "Wallet-Verbindung fehlgeschlagen",
+    "connection_declined": "Verbindungsanfrage abgelehnt"
+  },
+  "footer": {
+    "about": "Über uns",
+    "analytics": "Analytik",
+    "documentation": "Dokumentation"
+  }
+}

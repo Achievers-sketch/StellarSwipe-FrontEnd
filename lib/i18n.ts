@@ -2,11 +2,48 @@
  * Simple i18n system with JSON-based locale files
  */
 
-export type Locale = 'en' | 'ng';
+export type Locale = 'en' | 'ng' | 'es' | 'fr' | 'de' | 'zh' | 'ar';
 
 const LOCALE_KEY = 'stellarswipe:locale';
 const DEFAULT_LOCALE: Locale = 'en';
-const SUPPORTED_LOCALES: Locale[] = ['en', 'ng'];
+const SUPPORTED_LOCALES: Locale[] = ['en', 'ng', 'es', 'fr', 'de', 'zh', 'ar'];
+
+/** RTL locales — consumers should apply dir="rtl" when active */
+export const RTL_LOCALES: Locale[] = ['ar'];
+
+export function isRTL(locale: Locale): boolean {
+  return RTL_LOCALES.includes(locale);
+}
+
+/** BCP-47 tags for Intl APIs */
+export const LOCALE_BCP47: Record<Locale, string> = {
+  en: 'en-US',
+  ng: 'yo-NG',
+  es: 'es-ES',
+  fr: 'fr-FR',
+  de: 'de-DE',
+  zh: 'zh-CN',
+  ar: 'ar-SA',
+};
+
+/** Format a number according to the current locale */
+export function formatNumber(value: number, options?: Intl.NumberFormatOptions): string {
+  return new Intl.NumberFormat(LOCALE_BCP47[currentLocale], options).format(value);
+}
+
+/** Format a date according to the current locale */
+export function formatDate(date: Date | string | number, options?: Intl.DateTimeFormatOptions): string {
+  return new Intl.DateTimeFormat(LOCALE_BCP47[currentLocale], options).format(new Date(date));
+}
+
+/** Format currency according to the current locale */
+export function formatCurrency(value: number, currency = 'USD'): string {
+  return new Intl.NumberFormat(LOCALE_BCP47[currentLocale], {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+  }).format(value);
+}
 
 let currentLocale: Locale = DEFAULT_LOCALE;
 let translations: Record<string, any> = {};

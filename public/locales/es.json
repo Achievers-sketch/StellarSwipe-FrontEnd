@@ -1,0 +1,63 @@
+{
+  "common": {
+    "loading": "Cargando",
+    "error": "Error",
+    "success": "Éxito",
+    "close": "Cerrar",
+    "dismiss": "Descartar",
+    "retry": "Reintentar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "continue": "Continuar",
+    "cancel": "Cancelar"
+  },
+  "header": {
+    "title": "StellarSwipe",
+    "dashboard": "Panel",
+    "leaderboard": "Clasificación",
+    "portfolio": "Portafolio",
+    "profile": "Perfil",
+    "settings": "Configuración"
+  },
+  "signals": {
+    "signal_feed": "Feed de señales",
+    "buy_signal": "Señal de compra",
+    "sell_signal": "Señal de venta",
+    "execution_price": "Precio de ejecución",
+    "confidence": "Confianza",
+    "target": "Objetivo",
+    "roi": "Rentabilidad",
+    "swipe_or_use_keys": "Desliza o usa ← → teclas",
+    "pass": "Pasar",
+    "execute_trade": "Ejecutar operación",
+    "demo_trade": "Operación demo",
+    "share": "Compartir"
+  },
+  "trade": {
+    "trade_executed": "Operación ejecutada",
+    "trade_failed": "Operación fallida",
+    "swap_completed": "Tu intercambio se completó con éxito",
+    "view_portfolio": "Ver portafolio",
+    "continue_swiping": "Seguir deslizando",
+    "transaction": "Transacción"
+  },
+  "notifications": {
+    "enable_notifications": "Activar notificaciones",
+    "notifications_disabled": "Notificaciones bloqueadas. Revisa los ajustes del navegador.",
+    "trade_success": "Operación exitosa",
+    "trade_failure": "Operación fallida"
+  },
+  "wallet": {
+    "connect_wallet": "Conectar billetera",
+    "disconnect_wallet": "Desconectar billetera",
+    "wallet_connected": "Billetera conectada",
+    "wallet_disconnected": "Billetera desconectada",
+    "connection_failed": "No se pudo conectar la billetera",
+    "connection_declined": "Solicitud de conexión rechazada"
+  },
+  "footer": {
+    "about": "Acerca de",
+    "analytics": "Análisis",
+    "documentation": "Documentación"
+  }
+}

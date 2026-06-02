@@ -1,0 +1,63 @@
+{
+  "common": {
+    "loading": "Chargement",
+    "error": "Erreur",
+    "success": "Succès",
+    "close": "Fermer",
+    "dismiss": "Ignorer",
+    "retry": "Réessayer",
+    "back": "Retour",
+    "next": "Suivant",
+    "continue": "Continuer",
+    "cancel": "Annuler"
+  },
+  "header": {
+    "title": "StellarSwipe",
+    "dashboard": "Tableau de bord",
+    "leaderboard": "Classement",
+    "portfolio": "Portefeuille",
+    "profile": "Profil",
+    "settings": "Paramètres"
+  },
+  "signals": {
+    "signal_feed": "Fil de signaux",
+    "buy_signal": "Signal d'achat",
+    "sell_signal": "Signal de vente",
+    "execution_price": "Prix d'exécution",
+    "confidence": "Confiance",
+    "target": "Cible",
+    "roi": "Rendement",
+    "swipe_or_use_keys": "Glissez ou utilisez ← → les touches",
+    "pass": "Passer",
+    "execute_trade": "Exécuter la transaction",
+    "demo_trade": "Transaction démo",
+    "share": "Partager"
+  },
+  "trade": {
+    "trade_executed": "Transaction exécutée",
+    "trade_failed": "Transaction échouée",
+    "swap_completed": "Votre échange a été complété avec succès",
+    "view_portfolio": "Voir le portefeuille",
+    "continue_swiping": "Continuer à glisser",
+    "transaction": "Transaction"
+  },
+  "notifications": {
+    "enable_notifications": "Activer les notifications",
+    "notifications_disabled": "Notifications bloquées. Vérifiez les paramètres du navigateur.",
+    "trade_success": "Transaction réussie",
+    "trade_failure": "Transaction échouée"
+  },
+  "wallet": {
+    "connect_wallet": "Connecter le portefeuille",
+    "disconnect_wallet": "Déconnecter le portefeuille",
+    "wallet_connected": "Portefeuille connecté",
+    "wallet_disconnected": "Portefeuille déconnecté",
+    "connection_failed": "Impossible de connecter le portefeuille",
+    "connection_declined": "Demande de connexion refusée"
+  },
+  "footer": {
+    "about": "À propos",
+    "analytics": "Analytique",
+    "documentation": "Documentation"
+  }
+}
