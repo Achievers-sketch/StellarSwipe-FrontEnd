@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Info, Shield, SlidersHorizontal } from "lucide-react";
 import { usePositionLimitStore } from "@/store/usePositionLimitStore";
@@ -16,6 +16,7 @@ export function PositionLimitToggle({
   portfolioBalance,
   isLoading = false,
 }: PositionLimitToggleProps) {
+  const [tooltipOpen, setTooltipOpen] = useState(false);
   const { enabled, percentage, toggle, setPercentage } = usePositionLimitStore();
 
   const portfolioAvailable = portfolioBalance !== null && portfolioBalance !== undefined && !isLoading;
@@ -37,11 +38,47 @@ export function PositionLimitToggle({
         <div className="flex items-center gap-2">
           <Shield className="h-4 w-4 text-foreground-muted" />
           <span className="text-sm font-medium text-foreground">Position Limit</span>
-          <div className="group relative">
-            <Info className="h-3.5 w-3.5 text-foreground-subtle cursor-help" />
-            <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-border bg-surface px-3 py-2 text-xs text-foreground-muted opacity-0 shadow-lg transition-opacity group-hover:opacity-100 pointer-events-none">
-              Cap your trade to a percentage of your portfolio
-            </div>
+          <div className="relative">
+            <button
+              type="button"
+              aria-label="Position limit help"
+              className="flex items-center"
+              onMouseEnter={() => setTooltipOpen(true)}
+              onMouseLeave={() => setTooltipOpen(false)}
+              onFocus={() => setTooltipOpen(true)}
+              onBlur={() => setTooltipOpen(false)}
+            >
+              <Info
+                className="h-3.5 w-3.5 text-foreground-subtle cursor-help"
+                aria-hidden="true"
+              />
+            </button>
+            {tooltipOpen && (
+              <div
+                id="position-limit-tooltip"
+                role="tooltip"
+                className="absolute bottom-full left-1/2 z-50 mb-2 w-60 -translate-x-1/2 rounded-xl border border-border bg-surface p-3 text-xs shadow-xl shadow-black/40"
+              >
+                <p className="mb-1 font-semibold text-foreground">
+                  Position Limit
+                </p>
+                <div className="space-y-1 text-foreground-muted">
+                  <p>
+                    Limits each trade to a percentage of your total portfolio. When
+                    enabled, trades exceeding this limit will be automatically
+                    reduced.
+                  </p>
+                  <p>
+                    <span className="font-medium text-foreground">Max:</span>{" "}
+                    25% per trade (slider range)
+                  </p>
+                </div>
+                <div
+                  className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-surface"
+                  aria-hidden="true"
+                />
+              </div>
+            )}
           </div>
         </div>
 
