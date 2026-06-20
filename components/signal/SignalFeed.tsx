@@ -5,6 +5,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import type { InfiniteData } from "@tanstack/query-core";
 import { Button } from "@/components/ui/button";
 import { SignalEmptyState } from "@/components/SignalEmptyState";
+import { SignalCardSkeleton } from "@/components/SignalCardSkeleton";
 import { SignalFeedFilters } from "@/components/SignalFeedFilters";
 import { SignalSortControls } from "@/components/SignalSortControls";
 import { SignalFilterBottomSheet } from "@/components/SignalFilterBottomSheet";
@@ -317,21 +318,12 @@ export function SignalFeed() {
           />
         )}
 
-        {/* #98: skeleton while loading — consistent loading state */}
+        {/* #192: richer skeleton — mirrors card/chart/metadata layout while signal data is fetching */}
         {isLoading ? (
-          <div className="space-y-4" aria-label="Loading signals" aria-busy="true">
+          <div className="space-y-4" role="status" aria-label="Loading signal feed" aria-live="polite">
+            <span className="sr-only">Loading signal feed…</span>
             {Array.from({ length: 3 }).map((_, index) => (
-              <div
-                key={index}
-                className="animate-pulse rounded-3xl border border-white/10 bg-slate-900/80 p-4 sm:p-6"
-                aria-hidden="true"
-              >
-                <div className="mb-4 h-6 w-3/5 rounded-xl bg-surface-high" />
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="h-5 rounded-xl bg-surface-high" />
-                  <div className="h-5 rounded-xl bg-surface-high" />
-                </div>
-              </div>
+              <SignalCardSkeleton key={index} />
             ))}
           </div>
         ) : (
@@ -406,6 +398,14 @@ export function SignalFeed() {
               </article>
             );
           })
+        )}
+
+        {/* #192: append a skeleton card while the next page loads so the feed's height
+            doesn't collapse and then jump once the new signals render */}
+        {!isLoading && isFetchingNextPage && (
+          <div aria-hidden="true">
+            <SignalCardSkeleton />
+          </div>
         )}
       </div>
 
