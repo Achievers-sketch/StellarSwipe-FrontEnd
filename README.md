@@ -1,5 +1,6 @@
 # StellarSwipe-FrontEnd
 
+[![CI](https://github.com/AgesEmpire/StellarSwipe-FrontEnd/actions/workflows/ci.yml/badge.svg)](https://github.com/AgesEmpire/StellarSwipe-FrontEnd/actions/workflows/ci.yml)
 
 ## Overview
 
@@ -37,6 +38,34 @@ Set environment variables (.env.local):
 
 Run dev server:
   npm run dev
+
+## Contributing
+
+### TypeScript strict mode
+
+`tsconfig.json` enforces `strict: true`. All new code must pass `npx tsc --noEmit` without errors. Avoid blanket `@ts-ignore` or `any` casts; if an exception is truly necessary, scope it narrowly and add a comment explaining why.
+
+### Pre-commit hooks (Husky + lint-staged)
+
+Husky runs `lint-staged` before every commit. Staged `.ts`/`.tsx` files are auto-fixed by ESLint; if any unfixable lint errors remain the commit is blocked with a clear error message.
+
+Hooks install automatically via the `prepare` npm script when you run `npm install`.
+
+To bypass in a genuine emergency (e.g., a partial WIP commit that must land immediately):
+```bash
+git commit --no-verify -m "your message"
+```
+Do **not** use `--no-verify` as a routine workaround — fix the lint errors instead.
+
+### Dependency updates (Renovate)
+
+Renovate is configured via `renovate.json`. It opens automated PRs grouped by:
+- **Patch/minor dev deps** — grouped into one PR
+- **Patch/minor prod deps** — grouped into one PR
+- **Major bumps** — individual PRs labeled `major`
+- **Security alerts** — labeled `security`, opened immediately
+
+All Renovate PRs run through the CI checks before being mergeable.
 
 ## Worker Tracing
 
