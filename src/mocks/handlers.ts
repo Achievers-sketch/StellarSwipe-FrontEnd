@@ -1,0 +1,104 @@
+/**
+ * MSW request handlers for the app's key API endpoints.
+ *
+ * Usage in tests:
+ *   import { server } from '@/src/mocks/server';
+ *   import { http, HttpResponse } from 'msw';
+ *
+ *   // Override a handler for one test:
+ *   server.use(
+ *     http.get('/api/signals', () => HttpResponse.json({ error: 'Server error' }, { status: 500 }))
+ *   );
+ *
+ * The override is automatically reset after each test via server.resetHandlers().
+ */
+
+import { http, HttpResponse } from "msw";
+
+export const mockSignals = [
+  {
+    id: "sig-1",
+    asset: "XLM/USDC",
+    action: "BUY" as const,
+    confidence: 82,
+    timestamp: "2024-01-15T10:00:00Z",
+    rationale: "Strong momentum signal",
+    stats: {
+      entryPrice: 0.4821,
+      targetPrice: 0.55,
+      stopLoss: 0.44,
+      riskReward: "2.1",
+    },
+    providerId: "provider-1",
+    providerName: "AlphaBot",
+  },
+  {
+    id: "sig-2",
+    asset: "BTC/USDC",
+    action: "SELL" as const,
+    confidence: 74,
+    timestamp: "2024-01-15T09:30:00Z",
+    rationale: "RSI overbought",
+    stats: {
+      entryPrice: 45000,
+      targetPrice: 42000,
+      stopLoss: 46500,
+      riskReward: "2.0",
+    },
+    providerId: "provider-2",
+    providerName: "BetaSignals",
+  },
+];
+
+export const mockSubscriptions = [
+  {
+    id: "sub-1",
+    providerId: "provider-1",
+    providerName: "AlphaBot",
+    status: "active",
+    createdAt: "2024-01-01T00:00:00Z",
+  },
+];
+
+export const handlers = [
+  http.get("/api/signals", ({ request }) => {
+    const url = new URL(request.url);
+    const page = Number(url.searchParams.get("page") ?? "1");
+    const pageSize = Number(url.searchParams.get("pageSize") ?? "10");
+
+    if (isNaN(page) || page < 1 || isNaN(pageSize) || pageSize < 1) {
+      return HttpResponse.json(
+        { error: "Invalid pagination parameters." },
+        { status: 400 }
+      );
+    }
+
+    return HttpResponse.json({
+      signals: mockSignals,
+      page,
+      pageSize,
+      total: mockSignals.length,
+    });
+  }),
+
+  http.get("/api/subscriptions", ({ request }) => {
+    const url = new URL(request.url);
+    const status = url.searchParams.get("status");
+
+    const filtered = status
+      ? mockSubscriptions.filter((s) => s.status === status)
+      : mockSubscriptions;
+
+    return HttpResponse.json({ subscriptions: filtered });
+  }),
+
+  http.post("/api/trade", async ({ request }) => {
+    const body = await request.json() as Record<string, unknown>;
+    return HttpResponse.json({
+      success: true,
+      txHash: "mock-tx-hash-abc123",
+      asset: body.asset,
+      amount: body.amount,
+    });
+  }),
+];
