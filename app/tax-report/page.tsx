@@ -1,10 +1,23 @@
 import type { Metadata } from "next";
-import { TaxReportingTool } from "@/components/TaxReportingTool";
+import dynamic from "next/dynamic";
 
 export const metadata: Metadata = {
   title: "Tax Report | StellarSwipe",
   description: "Generate tax documents from your StellarSwipe trading activity.",
 };
+
+const TaxReportingTool = dynamic(
+  () => import("@/components/TaxReportingTool").then((m) => m.TaxReportingTool),
+  {
+    loading: () => (
+      <div className="animate-pulse space-y-4">
+        <div className="h-8 bg-white/10 rounded w-48" />
+        <div className="h-64 bg-white/10 rounded" />
+      </div>
+    ),
+    ssr: false,
+  }
+);
 
 export default function TaxReportPage() {
   return (
