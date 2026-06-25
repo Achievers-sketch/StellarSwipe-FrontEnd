@@ -7,6 +7,7 @@ import { PageTransitionPlaceholder } from "@/components/PageTransitionPlaceholde
 import { TradeStatusBanner } from "@/components/TradeStatusBanner";
 import { DevPerfOverlay } from "@/components/DevPerfOverlay";
 import { ScrollRestoration } from "@/components/ScrollRestoration";
+import { WebVitalsReporting } from "@/components/WebVitalsReporting";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -41,6 +42,7 @@ export default function RootLayout({
       <body className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
         <Providers>
           <ScrollRestoration />
+          <WebVitalsReporting />
           <Navbar />
           <PageTransitionPlaceholder />
           {children}

@@ -47,7 +47,7 @@ export function NotificationPermissionButton() {
     return (
       <Button
         onClick={subscribe}
-        disabled={loading || pushState === "unsupported"}
+        disabled={loading}
         variant="outline"
         size="sm"
         aria-label="Enable push notifications"

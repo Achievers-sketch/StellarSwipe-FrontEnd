@@ -2,6 +2,7 @@
 
 import { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
+import * as Sentry from "@sentry/nextjs";
 
 interface Props {
   children: ReactNode;
@@ -33,6 +34,13 @@ export class ErrorBoundary extends Component<Props, State> {
 
     console.error("[ErrorBoundary] Caught an error:", error);
     console.error("[ErrorBoundary] Component stack:", errorInfo.componentStack);
+
+    Sentry.withScope((scope) => {
+      scope.setContext("component_stack", {
+        componentStack: errorInfo.componentStack,
+      });
+      Sentry.captureException(error);
+    });
 
     if (typeof window !== "undefined") {
       window.dispatchEvent(

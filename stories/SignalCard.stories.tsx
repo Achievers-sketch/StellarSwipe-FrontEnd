@@ -74,7 +74,7 @@ export const Expired: Story = {
   args: {
     ...base,
     timestamp: new Date("2023-01-01T00:00:00Z"),
-    conflictReason: "expired" as const,
+    conflictReason: "signal_expired" as const,
   },
 };
 

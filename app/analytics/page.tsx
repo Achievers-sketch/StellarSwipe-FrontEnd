@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic"
 
 const PortfolioAllocationChart = dynamic(
-  () => import("@/components/chart/PortfolioAllocationChart"),
+  () => import("@/components/chart/PortfolioAllocationChart").then((mod) => ({ default: mod.PortfolioAllocationChart })),
   {
     loading: () => <div className="animate-pulse h-48 bg-white/10 rounded" />,
     ssr: false,
@@ -11,7 +11,7 @@ const PortfolioAllocationChart = dynamic(
 )
 
 const PnLWidget = dynamic(
-  () => import("@/components/chart/PnLWidget"),
+  () => import("@/components/chart/PnLWidget").then((mod) => ({ default: mod.PnLWidget })),
   {
     loading: () => <div className="animate-pulse h-48 bg-white/10 rounded" />,
     ssr: false,

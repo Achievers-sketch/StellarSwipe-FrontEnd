@@ -24,9 +24,10 @@ export async function subscribeToPush(
 ): Promise<PushSubscription | null> {
   const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   if (!vapidKey) return null;
+  const applicationServerKey = urlBase64ToUint8Array(vapidKey);
   return registration.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(vapidKey),
+    applicationServerKey: applicationServerKey as BufferSource,
   });
 }
 

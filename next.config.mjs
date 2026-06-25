@@ -1,3 +1,4 @@
+import { withSentryConfig } from "@sentry/nextjs";
 import bundleAnalyzer from "@next/bundle-analyzer";
 
 const withBundleAnalyzer = bundleAnalyzer({
@@ -20,4 +21,17 @@ const nextConfig = {
   },
 };
 
-export default withBundleAnalyzer(nextConfig);
+const configWithBundleAnalyzer = withBundleAnalyzer(nextConfig);
+
+export default withSentryConfig(configWithBundleAnalyzer, {
+  org: "your-org",
+  project: "your-project",
+  silent: true,
+  widenClientFileUpload: true,
+  webpack: {
+    reactComponentAnnotation: { enabled: true },
+    treeshake: { removeDebugLogging: true },
+    automaticVercelMonitors: true,
+  },
+  hideSourceMaps: true,
+});
