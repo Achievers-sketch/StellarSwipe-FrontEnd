@@ -1,15 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, Printer, GitCompare } from "lucide-react";
+import { Plus, Trash2, Printer, GitCompare, Link as LinkIcon, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageTransition } from "@/components/PageTransition";
 import { useComparisonStore } from "@/store/useComparisonStore";
-import { ComparisonCard } from "@/components/comparison/ComparisonCard";
 import { MetricToggleBar } from "@/components/comparison/MetricToggleBar";
-import { ComparisonChart } from "@/components/comparison/ComparisonChart";
-import { AddSignalPanel } from "@/components/comparison/AddSignalPanel";
+import { fetchSignals } from "@/lib/api";
+
+const ComparisonCard = dynamic(
+  () => import("@/components/comparison/ComparisonCard").then((m) => m.ComparisonCard),
+  { loading: () => <div className="animate-pulse h-48 bg-white/5 rounded-xl" />, ssr: false }
+);
+const ComparisonChart = dynamic(
+  () => import("@/components/comparison/ComparisonChart").then((m) => m.ComparisonChart),
+  { loading: () => <div className="animate-pulse h-32 bg-white/5 rounded-xl" />, ssr: false }
+);
+const AddSignalPanel = dynamic(
+  () => import("@/components/comparison/AddSignalPanel").then((m) => m.AddSignalPanel),
+  { loading: () => <div className="animate-pulse h-20 bg-white/5 rounded" />, ssr: false }
+);
 
 function computeBestValues(signals: ReturnType<typeof useComparisonStore.getState>["signals"]): Record<string, number> {
   const best: Record<string, number> = {};
@@ -33,8 +46,43 @@ function computeBestValues(signals: ReturnType<typeof useComparisonStore.getStat
 }
 
 export default function ComparePage() {
-  const { signals, removeSignal, clearSignals, hiddenMetrics, toggleMetric, canAdd } = useComparisonStore();
+  const { signals, removeSignal, clearSignals, hiddenMetrics, toggleMetric, canAdd, addSignal } = useComparisonStore();
   const [addPanelOpen, setAddPanelOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // On mount: restore comparison from URL ?ids=a,b,c
+  useEffect(() => {
+    const ids = searchParams.get("ids");
+    if (!ids || signals.length > 0) return;
+    const idList = ids.split(",").filter(Boolean).slice(0, 3);
+    fetchSignals()
+      .then((all) => {
+        for (const id of idList) {
+          const found = all.find((s) => s.id === id);
+          if (found) addSignal(found);
+        }
+      })
+      .catch(() => {
+        // gracefully ignore — signal may no longer exist
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Keep URL in sync with current selection
+  useEffect(() => {
+    const ids = signals.map((s) => s.id).join(",");
+    const params = ids ? `?ids=${ids}` : "";
+    router.replace(`/compare${params}`, { scroll: false });
+  }, [signals, router]);
+
+  const handleCopyShareLink = async () => {
+    const url = window.location.href;
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const bestValues = computeBestValues(signals);
 
@@ -58,6 +106,10 @@ export default function ComparePage() {
             <div className="flex items-center gap-2 print:hidden">
               {signals.length > 0 && (
                 <>
+                  <Button variant="outline" size="sm" onClick={handleCopyShareLink} className="gap-2">
+                    {copied ? <Check className="h-4 w-4 text-green-400" /> : <LinkIcon className="h-4 w-4" />}
+                    {copied ? "Copied!" : "Share Link"}
+                  </Button>
                   <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-2">
                     <Printer className="h-4 w-4" />
                     Export PDF

@@ -5,13 +5,16 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:analyze": "ANALYZE=true next build",
     "start": "next start",
     "lint": "next lint",
     "test": "jest --no-coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "prepare": "husky"
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "bundle:check": "node scripts/check-bundle-budget.js"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.6",
@@ -41,7 +44,12 @@
     ]
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^14.2.29",
     "@playwright/test": "^1.61.1",
+    "@storybook/addon-essentials": "^8.6.12",
+    "@storybook/addon-themes": "^8.6.12",
+    "@storybook/nextjs": "^8.6.12",
+    "@storybook/react": "^8.6.12",
     "@tailwindcss/postcss": "^4.0.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -50,6 +58,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "chromatic": "^11.0.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.29",
     "husky": "^9.1.7",
@@ -57,6 +66,7 @@
     "jest-environment-jsdom": "^30.4.1",
     "lint-staged": "^17.0.8",
     "msw": "^2.14.6",
+    "storybook": "^8.6.12",
     "tailwindcss": "^4.0.0",
     "ts-jest": "^29.4.9",
     "typescript": "^5"

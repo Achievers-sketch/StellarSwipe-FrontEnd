@@ -39,33 +39,65 @@ Set environment variables (.env.local):
 Run dev server:
   npm run dev
 
-## Contributing
+## Storybook
 
-### TypeScript strict mode
+Storybook provides an isolated visual catalog for all core UI primitives and components.
 
-`tsconfig.json` enforces `strict: true`. All new code must pass `npx tsc --noEmit` without errors. Avoid blanket `@ts-ignore` or `any` casts; if an exception is truly necessary, scope it narrowly and add a comment explaining why.
+### Run locally
 
-### Pre-commit hooks (Husky + lint-staged)
-
-Husky runs `lint-staged` before every commit. Staged `.ts`/`.tsx` files are auto-fixed by ESLint; if any unfixable lint errors remain the commit is blocked with a clear error message.
-
-Hooks install automatically via the `prepare` npm script when you run `npm install`.
-
-To bypass in a genuine emergency (e.g., a partial WIP commit that must land immediately):
 ```bash
-git commit --no-verify -m "your message"
+npm run storybook
+# Opens at http://localhost:6006
 ```
-Do **not** use `--no-verify` as a routine workaround — fix the lint errors instead.
 
-### Dependency updates (Renovate)
+Use the theme toolbar (sun/moon icon) to toggle between **light** and **dark** themes.
 
-Renovate is configured via `renovate.json`. It opens automated PRs grouped by:
-- **Patch/minor dev deps** — grouped into one PR
-- **Patch/minor prod deps** — grouped into one PR
-- **Major bumps** — individual PRs labeled `major`
-- **Security alerts** — labeled `security`, opened immediately
+### Build static Storybook
 
-All Renovate PRs run through the CI checks before being mergeable.
+```bash
+npm run build-storybook
+# Outputs to storybook-static/
+```
+
+### Add a new story
+
+1. Create `stories/YourComponent.stories.tsx` alongside existing stories.
+2. Follow the `Meta` / `StoryObj` pattern used in existing stories.
+3. Tag with `autodocs` to auto-generate docs pages.
+
+Stories are also used for **Chromatic visual regression** snapshots — any story in `stories/` is captured on every PR. To exclude a story from snapshots add `parameters: { chromatic: { disableSnapshot: true } }`.
+
+## Bundle Size Gate
+
+The CI bundle size check runs `ANALYZE=true npm run build` and compares output against `bundle-budget.json`.
+
+To raise a budget intentionally:
+1. Edit `bundle-budget.json` — increase `sizeKb` for the affected chunk.
+2. Add a comment in the PR description explaining the accepted regression.
+
+Run locally:
+
+```bash
+npm run build:analyze   # builds with analyzer, opens report in browser
+npm run bundle:check    # validates current build against budget
+```
+
+## Lighthouse CI
+
+Performance audits run automatically on every PR via Lighthouse CI (`lighthouserc.js`).
+
+Budget thresholds (defined in `lighthouserc.js`):
+
+| Metric | Budget |
+|---|---|
+| Performance score | ≥ 0.70 |
+| LCP | ≤ 2500 ms |
+| CLS | ≤ 0.10 |
+| TBT | ≤ 300 ms |
+
+To adjust a budget: edit the `assertions` block in `lighthouserc.js` and document the reason in your PR.
+
+Lighthouse reports are uploaded as CI artifacts (`lighthouse-reports/`) for debugging failed runs.
 
 ## Worker Tracing
 
