@@ -1,4 +1,5 @@
 import { useWalletStore } from "@/store/useWalletStore";
+import { useBookmarkStore } from "@/store/useBookmarkStore";
 import { useSignalStore, type Signal } from "@/store/useSignalStore";
 import {
   useTransactionStore,
@@ -93,6 +94,47 @@ describe("useSignalStore", () => {
     useSignalStore.getState().setQueue(SAMPLE_SIGNALS);
     useSignalStore.getState().setQueue([]);
     expect(useSignalStore.getState().queue).toHaveLength(0);
+  });
+});
+
+// ── useBookmarkStore ─────────────────────────────────────────────────────────
+
+describe("useBookmarkStore", () => {
+  beforeEach(() => {
+    useBookmarkStore.setState({
+      bookmarks: [],
+      hasBookmark: (id: string) => useBookmarkStore.getState().bookmarks.includes(id),
+      addBookmark: useBookmarkStore.getState().addBookmark,
+      removeBookmark: useBookmarkStore.getState().removeBookmark,
+      toggleBookmark: useBookmarkStore.getState().toggleBookmark,
+      setBookmarks: useBookmarkStore.getState().setBookmarks,
+      clearBookmarks: useBookmarkStore.getState().clearBookmarks,
+    });
+  });
+
+  it("adds and removes bookmarks", () => {
+    useBookmarkStore.getState().addBookmark("signal-1");
+    expect(useBookmarkStore.getState().bookmarks).toEqual(["signal-1"]);
+    useBookmarkStore.getState().removeBookmark("signal-1");
+    expect(useBookmarkStore.getState().bookmarks).toEqual([]);
+  });
+
+  it("toggleBookmark flips membership", () => {
+    useBookmarkStore.getState().toggleBookmark("signal-2");
+    expect(useBookmarkStore.getState().bookmarks).toEqual(["signal-2"]);
+    useBookmarkStore.getState().toggleBookmark("signal-2");
+    expect(useBookmarkStore.getState().bookmarks).toEqual([]);
+  });
+
+  it("setBookmarks deduplicates ids", () => {
+    useBookmarkStore.getState().setBookmarks(["signal-3", "signal-3", "signal-4"]);
+    expect(useBookmarkStore.getState().bookmarks).toEqual(["signal-3", "signal-4"]);
+  });
+
+  it("hasBookmark reflects current state", () => {
+    useBookmarkStore.getState().addBookmark("signal-5");
+    expect(useBookmarkStore.getState().hasBookmark("signal-5")).toBe(true);
+    expect(useBookmarkStore.getState().hasBookmark("signal-x")).toBe(false);
   });
 });
 

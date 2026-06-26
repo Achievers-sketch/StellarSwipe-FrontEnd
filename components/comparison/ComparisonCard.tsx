@@ -4,7 +4,7 @@ import { X, TrendingUp, TrendingDown, Bookmark, BookmarkCheck } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Signal } from "@/lib/api";
-import { useBookmarkStore } from "@/store/useBookmarkStore";
+import { useBookmarkActions } from "@/hooks/useBookmarkActions";
 
 interface ComparisonCardProps {
   signal: Signal;
@@ -22,8 +22,8 @@ const METRIC_LABELS: Record<string, string> = {
 };
 
 export function ComparisonCard({ signal, onRemove, hiddenMetrics, bestValues }: ComparisonCardProps) {
-  const { bookmarks, toggleBookmark } = useBookmarkStore();
-  const isBookmarked = bookmarks.includes(signal.id);
+  const { hasBookmark, addBookmark, removeBookmark } = useBookmarkActions();
+  const isBookmarked = hasBookmark(signal.id);
   const isBuy = signal.action === "BUY";
 
   const metrics = [
@@ -92,7 +92,13 @@ export function ComparisonCard({ signal, onRemove, hiddenMetrics, bestValues }: 
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => toggleBookmark(signal.id)}
+          onClick={() => {
+            if (isBookmarked) {
+              removeBookmark(signal.id, signal.asset);
+            } else {
+              addBookmark(signal.id);
+            }
+          }}
           className={cn("w-full gap-2 text-xs", isBookmarked ? "text-yellow-400" : "text-gray-400")}
         >
           {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}

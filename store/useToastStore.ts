@@ -4,11 +4,17 @@ import { create } from "zustand";
 
 export type ToastTone = "success" | "error" | "info";
 
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 export interface ToastMessage {
   id: string;
   title: string;
   description?: string;
   link?: { href: string; label: string };
+  action?: ToastAction;
   tone: ToastTone;
   duration: number;
 }
@@ -34,12 +40,10 @@ function generateToastId() {
 
 export const useToastStore = create<ToastState>((set, get) => ({
   toasts: [],
-  enqueue: ({ title, description, link, tone, duration = DEFAULT_TOAST_DURATION }) => {
+  enqueue: ({ title, description, link, action, tone, duration = DEFAULT_TOAST_DURATION }) => {
     const id = generateToastId();
     set((state) => ({
-      toasts: [...state.toasts, { id, title, description, link, tone, duration }].slice(
-        -MAX_VISIBLE_TOASTS
-      ),
+      toasts: [...state.toasts, { id, title, description, link, action, tone, duration }].slice(-MAX_VISIBLE_TOASTS),
     }));
 
     if (typeof window !== "undefined" && duration > 0) {

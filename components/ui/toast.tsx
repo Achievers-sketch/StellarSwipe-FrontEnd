@@ -59,14 +59,28 @@ export function ToastProvider() {
                       {toast.description}
                     </p>
                   ) : null}
-                  {toast.link ? (
-                    <a
-                      href={toast.link.href}
-                      className="mt-1.5 inline-block text-xs font-medium underline underline-offset-2 hover:opacity-75 transition-opacity"
-                    >
-                      {toast.link.label} →
-                    </a>
-                  ) : null}
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs font-medium">
+                    {toast.link ? (
+                      <a
+                        href={toast.link.href}
+                        className="underline underline-offset-2 hover:opacity-75 transition-opacity"
+                      >
+                        {toast.link.label} →
+                      </a>
+                    ) : null}
+                    {toast.action ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          toast.action?.onClick();
+                          dismiss(toast.id);
+                        }}
+                        className="rounded-full border border-current/20 px-2.5 py-1 text-current hover:bg-current/10 transition-colors"
+                      >
+                        {toast.action.label}
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
 
                 <button
