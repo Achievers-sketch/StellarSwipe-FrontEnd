@@ -14,7 +14,9 @@
     "test:e2e:headed": "playwright test --headed",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "bundle:check": "node scripts/check-bundle-budget.js"
+    "bundle:check": "node scripts/check-bundle-budget.js",
+    "api:generate": "node scripts/generate-api-types.js",
+    "api:check": "node scripts/generate-api-types.js --check"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.6",

@@ -4,7 +4,7 @@ import { fetchSignals, NetworkError, ServerError } from "@/lib/api";
 export function useSignals() {
   return useQuery({
     queryKey: ["signals"],
-    queryFn: fetchSignals,
+    queryFn: () => fetchSignals(),
     retry: (failureCount, error) => {
       // Retry on network errors up to 2 times
       if (error instanceof NetworkError && failureCount < 2) {
