@@ -1,12 +1,26 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Play, X } from "lucide-react";
-import { useDemoModeStore } from "@/store/useDemoModeStore";
+import { Play } from "lucide-react";
+import { useDemoModeStore, useDemoModeHydrated } from "@/store/useDemoModeStore";
 import { cn } from "@/lib/utils";
 
 export function DemoModeToggle({ className }: { className?: string }) {
   const { isDemoMode, toggleDemoMode } = useDemoModeStore();
+  const isHydrated = useDemoModeHydrated();
+
+  // Render a stable placeholder until localStorage has been read.
+  if (!isHydrated) {
+    return (
+      <div
+        className={cn(
+          "h-7 w-24 rounded-full bg-foreground/5 animate-pulse",
+          className
+        )}
+        aria-hidden="true"
+      />
+    );
+  }
 
   return (
     <button

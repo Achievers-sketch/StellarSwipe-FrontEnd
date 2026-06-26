@@ -1,15 +1,19 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
-import { useThemeStore } from "@/store/useThemeStore";
+import { useThemeStore, useThemeHydrated } from "@/store/useThemeStore";
 import { useEffect } from "react";
 
 /**
  * Applies the active theme class to <html> and renders a toggle button.
  * Mount once (inside Navbar or layout) — it handles DOM sync automatically.
+ *
+ * Renders nothing until the persisted theme has been rehydrated from
+ * localStorage to avoid a server/client mismatch.
  */
 export function ThemeToggle() {
   const { theme, toggle } = useThemeStore();
+  const isHydrated = useThemeHydrated();
 
   // Sync theme class on <html> whenever it changes
   useEffect(() => {
@@ -22,6 +26,18 @@ export function ThemeToggle() {
       root.classList.add("dark");
     }
   }, [theme]);
+
+  // Avoid rendering the wrong icon before hydration completes.
+  // The layout's inline script already sets the correct class on <html>,
+  // so suppressing this button until hydration is safe and flicker-free.
+  if (!isHydrated) {
+    return (
+      <div
+        className="h-8 w-8 rounded-md bg-surface-high/10 animate-pulse"
+        aria-hidden="true"
+      />
+    );
+  }
 
   return (
     <button
