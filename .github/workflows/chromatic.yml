@@ -24,6 +24,9 @@ on:
 #    then this story confirms the tooling catches the change.
 # 5. Set exitZeroOnChanges: false (or remove it) to block PRs on unreviewed diffs.
 
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
 jobs:
   chromatic:
     runs-on: ubuntu-latest
