@@ -14,10 +14,10 @@ export function DemoModeToggle({ className }: { className?: string }) {
       aria-pressed={isDemoMode}
       aria-label={isDemoMode ? "Exit demo mode" : "Enter demo mode"}
       className={cn(
-        "flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring fc-pill fc-toggle",
+        "flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring forced-color-adjust-none",
         isDemoMode
-          ? "bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30"
-          : "bg-foreground/5 text-foreground-muted hover:bg-foreground/10 hover:text-foreground",
+          ? "bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30 forced-colors:bg-[Highlight] forced-colors:text-[HighlightText] forced-colors:ring-[Highlight]"
+          : "bg-foreground/5 text-foreground-muted hover:bg-foreground/10 hover:text-foreground forced-colors:border forced-colors:border-[ButtonText] forced-colors:text-[ButtonText]",
         className
       )}
     >

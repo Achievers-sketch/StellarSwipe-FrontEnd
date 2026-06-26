@@ -418,3 +418,76 @@
   .z-toast     { z-index: var(--z-toast); }
   .z-loading   { z-index: var(--z-loading); }
 }
+
+/*
+ * ── Forced-colors (Windows High Contrast) overrides ──────────────────────
+ *
+ * Pattern applied here:
+ * 1. forced-color-adjust: none  — keep our palette on components whose
+ *    color carries semantic meaning (badges, toggles, delta pills).
+ * 2. System color keywords      — ButtonFace/ButtonText, Highlight/
+ *    HighlightText, LinkText, GrayText, Canvas/CanvasText, Mark/MarkText
+ *    map to whatever the OS high-contrast theme provides.
+ * 3. Focus rings                — `outline: 2px solid ButtonText` gives a
+ *    guaranteed-visible ring because forced-colors can kill box-shadow rings.
+ *
+ * For new components:
+ * - If background/text color conveys meaning, add `forced-color-adjust-none`
+ *   plus forced-colors:* Tailwind utilities (see badge/button files).
+ * - For purely decorative color use `forced-color-adjust: auto` (default).
+ * - Always test with DevTools "Emulate forced-colors: active".
+ */
+@media (forced-colors: active) {
+  /* ── Universal focus ring ─────────────────────────────────────────────── */
+  *:focus-visible {
+    outline: 2px solid ButtonText !important;
+    outline-offset: 2px !important;
+    box-shadow: none !important;
+  }
+
+  /* ── SignalCard article border & live-delta pill ─────────────────────── */
+  article {
+    border-color: ButtonText;
+  }
+
+  /* Live-delta pill: preserve emerald/red semantic by opting out */
+  .signal-delta-pill {
+    forced-color-adjust: none;
+    border: 1px solid ButtonText;
+  }
+
+  /* ── Swipe overlay TRADE / PASS labels ────────────────────────────────── */
+  .swipe-trade-label {
+    forced-color-adjust: none;
+    background-color: Highlight;
+    color: HighlightText;
+    border: 1px solid HighlightText;
+  }
+
+  .swipe-pass-label {
+    forced-color-adjust: none;
+    background-color: Mark;
+    color: MarkText;
+    border: 1px solid MarkText;
+  }
+
+  /* ── Share dropdown ──────────────────────────────────────────────────── */
+  .share-menu {
+    border-color: ButtonText;
+    background-color: Canvas;
+    color: CanvasText;
+  }
+
+  .share-menu button:hover {
+    background-color: Highlight;
+    color: HighlightText;
+  }
+
+  /* ── Disabled state legibility ───────────────────────────────────────── */
+  [disabled],
+  [aria-disabled="true"] {
+    opacity: 1 !important;
+    color: GrayText;
+    border-color: GrayText;
+  }
+}
