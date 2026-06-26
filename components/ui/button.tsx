@@ -29,12 +29,53 @@ const buttonVariants = cva(
   }
 );
 
+/**
+ * Props for the {@link Button} component.
+ *
+ * Extends all native `<button>` attributes plus CVA variant props.
+ */
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
+  /**
+   * When `true`, the button renders its child element directly via Radix
+   * `<Slot>`, merging props onto the child instead of rendering a `<button>`.
+   * Useful for wrapping `<Link>` or other non-button elements with button styles.
+   *
+   * @default false
+   */
   asChild?: boolean;
 }
 
+/**
+ * Button — the primary interactive element used throughout the app.
+ *
+ * Supports multiple visual variants (`default`, `destructive`, `outline`,
+ * `secondary`, `ghost`, `link`) and sizes (`default`, `sm`, `lg`, `icon`).
+ * Inherits all native `<button>` HTML attributes and forwards a ref.
+ *
+ * @example
+ * // Default primary button
+ * <Button onClick={handleTrade}>Place Order</Button>
+ *
+ * @example
+ * // Destructive variant, small size
+ * <Button variant="destructive" size="sm">Cancel</Button>
+ *
+ * @example
+ * // Icon-only button
+ * <Button variant="ghost" size="icon" aria-label="Close">
+ *   <X className="h-4 w-4" />
+ * </Button>
+ *
+ * @example
+ * // Render as a Next.js Link (asChild)
+ * <Button asChild variant="link">
+ *   <Link href="/dashboard">Go to Dashboard</Link>
+ * </Button>
+ *
+ * @see {@link https://storybook.stellarswipe.dev/?path=/docs/ui-button--docs Storybook — Button}
+ */
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
