@@ -5,6 +5,11 @@ import {
   useTransactionStore,
   type TransactionHistoryItem,
 } from "@/store/useTransactionStore";
+import { useDemoModeStore } from "@/store/useDemoModeStore";
+import { useOnboardingStore } from "@/store/useOnboardingStore";
+import { usePositionLimitStore } from "@/store/usePositionLimitStore";
+import { useSignalFilterStore } from "@/store/useSignalFilterStore";
+import { useThemeStore } from "@/store/useThemeStore";
 
 // ── useWalletStore ────────────────────────────────────────────────────────────
 
@@ -250,13 +255,6 @@ describe("useTransactionStore", () => {
 
 // ── Rehydration guard — _hasHydrated flag ────────────────────────────────────
 
-import { useBookmarkStore } from "@/store/useBookmarkStore";
-import { useDemoModeStore } from "@/store/useDemoModeStore";
-import { useOnboardingStore } from "@/store/useOnboardingStore";
-import { usePositionLimitStore } from "@/store/usePositionLimitStore";
-import { useSignalFilterStore } from "@/store/useSignalFilterStore";
-import { useThemeStore } from "@/store/useThemeStore";
-
 describe("Rehydration guard – _hasHydrated flag", () => {
   const stores = [
     { name: "useBookmarkStore", store: useBookmarkStore },
@@ -269,7 +267,6 @@ describe("Rehydration guard – _hasHydrated flag", () => {
 
   stores.forEach(({ name, store }) => {
     it(`${name}: _hasHydrated starts false`, () => {
-      // Reset to initial state
       (store as any).setState({ _hasHydrated: false });
       expect((store.getState() as any)._hasHydrated).toBe(false);
     });

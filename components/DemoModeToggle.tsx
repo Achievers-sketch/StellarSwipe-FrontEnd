@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Play } from "lucide-react";
 import { useDemoModeStore, useDemoModeHydrated } from "@/store/useDemoModeStore";
 import { cn } from "@/lib/utils";
