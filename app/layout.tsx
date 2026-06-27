@@ -38,11 +38,18 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <Providers>
+          {/* Skip link — visually hidden until focused; lets keyboard users bypass nav */}
+          <a href="#main-content" className="skip-link">
+            Skip to main content
+          </a>
           <ScrollRestoration />
           <WebVitalsReporting />
           <Navbar />
           <PageTransitionPlaceholder />
-          {children}
+          {/* id="main-content" is the skip-link target; pages provide the <main> landmark */}
+          <div id="main-content" tabIndex={-1} className="outline-none">
+            {children}
+          </div>
           <TradeStatusBanner />
           <DevPerfOverlay />
         </Providers>

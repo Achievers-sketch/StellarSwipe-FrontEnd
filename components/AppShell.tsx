@@ -108,7 +108,8 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <PageTransition>
-      <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8 lg:px-8 text-foreground">
+      {/* `div` here because <main id="main-content"> lives in the root layout */}
+      <div className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8 lg:px-8 text-foreground">
         <header className="mx-auto mb-6 flex w-full max-w-7xl items-center justify-between sm:mb-8">
           <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">StellarSwipe</h1>
           <div className="flex items-center gap-3">
