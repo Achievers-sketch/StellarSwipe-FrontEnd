@@ -441,6 +441,35 @@
   .z-loading   { z-index: var(--z-loading); }
 }
 
+/* ── Reduced-motion overrides ───────────────────────────────────────────── */
+/*
+ * When the user has requested reduced motion, disable decorative CSS
+ * animations (scroll reveals, dialog slide/zoom transitions). Essential
+ * feedback like loading spinners (animate-spin) are preserved because they
+ * communicate state, not just decoration.
+ */
+@media (prefers-reduced-motion: reduce) {
+  /* Suppress the Radix dialog slide/zoom keyframe animations */
+  .dialog-overlay,
+  .dialog-content {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Suppress Tailwind's animate-pulse on skeleton loaders — keep them visible */
+  .animate-pulse {
+    animation: none !important;
+  }
+
+  /* Ensure Framer Motion inline styles don't override this when y/scale are
+     zeroed out: framer-motion respects useReducedMotion() in JS, but as a
+     belt-and-suspenders measure we also disable CSS transitions here. */
+  [style*="transform"],
+  [style*="opacity"] {
+    transition: none !important;
+  }
+}
+
 /* ── Print-friendly styling ──────────────────────────────────────────────── */
 @media print {
   /* Hide non-essential UI */
