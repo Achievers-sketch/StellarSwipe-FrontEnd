@@ -7,6 +7,8 @@ export interface RecommendationFeedback {
   signalId: string;
   liked: boolean;
   timestamp: string;
+  /** 'explicit' = thumbs up/down; 'implicit' = copy, dismiss, or other behavioral signal */
+  source: 'explicit' | 'implicit';
 }
 
 export interface RecommendationSettings {
@@ -27,7 +29,7 @@ interface RecommendationStore {
   recommendations: RecommendedSignal[];
   accuracyMetrics: { total: number; correct: number };
   updateSettings: (patch: Partial<RecommendationSettings>) => void;
-  addFeedback: (signalId: string, liked: boolean) => void;
+  addFeedback: (signalId: string, liked: boolean, source?: 'explicit' | 'implicit') => void;
   setRecommendations: (recs: RecommendedSignal[]) => void;
   recordAccuracy: (wasCorrect: boolean) => void;
 }
@@ -43,10 +45,10 @@ export const useRecommendationStore = create<RecommendationStore>()(
       updateSettings: (patch) =>
         set((s) => ({ settings: { ...s.settings, ...patch } })),
 
-      addFeedback: (signalId, liked) =>
+      addFeedback: (signalId, liked, source = 'implicit') =>
         set((s) => ({
           feedback: [
-            { signalId, liked, timestamp: new Date().toISOString() },
+            { signalId, liked, timestamp: new Date().toISOString(), source },
             ...s.feedback.filter((f) => f.signalId !== signalId),
           ].slice(0, 200),
         })),
