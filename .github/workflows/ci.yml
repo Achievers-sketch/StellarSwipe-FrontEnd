@@ -1,6 +1,8 @@
 name: CI
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
 
@@ -29,3 +31,6 @@ jobs:
 
       - name: Test
         run: npm test
+
+      - name: Run Knip (Dead Code Detection)
+        run: npm run knip

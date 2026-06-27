@@ -419,75 +419,132 @@
   .z-loading   { z-index: var(--z-loading); }
 }
 
-/*
- * ── Forced-colors (Windows High Contrast) overrides ──────────────────────
- *
- * Pattern applied here:
- * 1. forced-color-adjust: none  — keep our palette on components whose
- *    color carries semantic meaning (badges, toggles, delta pills).
- * 2. System color keywords      — ButtonFace/ButtonText, Highlight/
- *    HighlightText, LinkText, GrayText, Canvas/CanvasText, Mark/MarkText
- *    map to whatever the OS high-contrast theme provides.
- * 3. Focus rings                — `outline: 2px solid ButtonText` gives a
- *    guaranteed-visible ring because forced-colors can kill box-shadow rings.
- *
- * For new components:
- * - If background/text color conveys meaning, add `forced-color-adjust-none`
- *   plus forced-colors:* Tailwind utilities (see badge/button files).
- * - For purely decorative color use `forced-color-adjust: auto` (default).
- * - Always test with DevTools "Emulate forced-colors: active".
- */
-@media (forced-colors: active) {
-  /* ── Universal focus ring ─────────────────────────────────────────────── */
-  *:focus-visible {
-    outline: 2px solid ButtonText !important;
-    outline-offset: 2px !important;
+/* ── Print-friendly styling ──────────────────────────────────────────────── */
+@media print {
+  /* Hide non-essential UI */
+  header,
+  footer,
+  button,
+  select,
+  input,
+  a[href^="https://stellar.expert"],
+  [role="complementary"],
+  .opacity-0.group-hover\:opacity-100,
+  .onboarding-flow,
+  .wallet-selection-modal,
+  .low-balance-alert,
+  .trade-modal,
+  .bg-white\/5.p-4.rounded,
+  .flex.gap-3,
+  .border-b.border-border\/40.pb-2,
+  .custom-scrollbar::-webkit-scrollbar,
+  .text-\[8px\].text-slate-500 {
+    display: none !important;
+  }
+
+  /* Force light background and high contrast */
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    color-scheme: light !important;
+  }
+
+  /* Ensure containers layout vertically without complex columns */
+  .grid {
+    display: block !important;
+  }
+
+  .grid > * {
+    margin-bottom: 2rem !important;
+    width: 100% !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Remove dark surface colors and enforce black-and-white borders */
+  .bg-card,
+  .bg-slate-950\/90,
+  .bg-slate-950\/95,
+  .bg-background\/80,
+  .bg-slate-900\/90,
+  .bg-white\/5,
+  .rounded-3xl,
+  .rounded-xl {
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #000000 !important;
     box-shadow: none !important;
   }
 
-  /* ── SignalCard article border & live-delta pill ─────────────────────── */
-  article {
-    border-color: ButtonText;
+  /* Text color adjustments */
+  .text-foreground,
+  .text-slate-300,
+  .text-white,
+  h1,
+  h2,
+  h3 {
+    color: #000000 !important;
   }
 
-  /* Live-delta pill: preserve emerald/red semantic by opting out */
-  .signal-delta-pill {
-    forced-color-adjust: none;
-    border: 1px solid ButtonText;
+  .text-foreground-muted,
+  .text-muted-foreground,
+  .text-slate-400,
+  .text-gray-400,
+  .text-foreground-subtle,
+  .text-slate-500 {
+    color: #334155 !important;
   }
 
-  /* ── Swipe overlay TRADE / PASS labels ────────────────────────────────── */
-  .swipe-trade-label {
-    forced-color-adjust: none;
-    background-color: Highlight;
-    color: HighlightText;
-    border: 1px solid HighlightText;
+  /* Enforce legible print colors for P&L indicators */
+  .text-green-400,
+  .text-green-600,
+  .text-accent-success,
+  .bg-green-500\/15 {
+    color: #166534 !important; /* Dark Green */
+    background: transparent !important;
   }
 
-  .swipe-pass-label {
-    forced-color-adjust: none;
-    background-color: Mark;
-    color: MarkText;
-    border: 1px solid MarkText;
+  .text-red-400,
+  .text-red-600,
+  .text-accent-danger,
+  .bg-red-500\/15 {
+    color: #991b1b !important; /* Dark Red */
+    background: transparent !important;
   }
 
-  /* ── Share dropdown ──────────────────────────────────────────────────── */
-  .share-menu {
-    border-color: ButtonText;
-    background-color: Canvas;
-    color: CanvasText;
+  .bg-green-500\/10,
+  .bg-red-500\/10 {
+    background: transparent !important;
+    border: 1px solid #cbd5e1 !important;
   }
 
-  .share-menu button:hover {
-    background-color: Highlight;
-    color: HighlightText;
+  /* SVGs should scale nicely */
+  svg {
+    max-width: 100% !important;
+    height: auto !important;
+    page-break-inside: avoid !important;
   }
 
-  /* ── Disabled state legibility ───────────────────────────────────────── */
-  [disabled],
-  [aria-disabled="true"] {
-    opacity: 1 !important;
-    color: GrayText;
-    border-color: GrayText;
+  /* Trade history and signal lists pagination rules */
+  article,
+  li {
+    page-break-inside: avoid !important;
+    border: 1px solid #cbd5e1 !important;
+    margin-bottom: 0.75rem !important;
+    background: #ffffff !important;
+  }
+
+  section,
+  ul,
+  .space-y-3 {
+    page-break-inside: auto !important;
+  }
+
+  /* Prevent awkward page cuts on cards */
+  .rounded-3xl,
+  .rounded-xl,
+  .border,
+  .card {
+    page-break-inside: avoid !important;
   }
 }
