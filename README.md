@@ -39,6 +39,12 @@ Set environment variables (.env.local):
 Run dev server:
   npm run dev
 
+### React Query Devtools
+
+When running locally (`npm run dev`), the [React Query Devtools](https://tanstack.com/query/latest/docs/framework/react/devtools) panel is automatically available — look for the floating TanStack logo in the corner of the app. Use it to inspect the live query cache, stale/fresh status, and refetch behaviour for hooks such as the signal feed (`["signals"]`).
+
+The devtools are mounted only when `NODE_ENV === "development"`; the import is dead-code-eliminated from production builds, so the panel never ships to users and requires no manual toggling.
+
 ## Storybook
 
 Storybook provides an isolated visual catalog for all core UI primitives and components.

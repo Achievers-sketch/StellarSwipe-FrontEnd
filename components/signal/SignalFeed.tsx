@@ -14,6 +14,7 @@ import { PricePrecisionToggle } from "@/components/PricePrecisionToggle";
 import { ExpiredSignalBanner } from "@/components/ExpiredSignalBanner";
 import { useSignalFilterStore } from "@/store/useSignalFilterStore";
 import { useBookmarkStore } from "@/store/useBookmarkStore";
+import { useSnoozeStore, selectVisibleSignals } from "@/store/useSnoozeStore";
 import type { Signal } from "@/lib/signals";
 import { Search, X, SlidersHorizontal } from "lucide-react";
 import { useSyncStatus } from "@/hooks/useSyncStatus";
@@ -50,8 +51,13 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
     setProvider,
   } = useSignalFilterStore();
   const bookmarkedIds = useBookmarkStore((state) => state.bookmarks);
+  // #321: snoozed signals are hidden from the feed until their snooze elapses.
+  const snoozedMap = useSnoozeStore((state) => state.snoozed);
+  const pruneExpiredSnoozes = useSnoozeStore((state) => state.pruneExpired);
   const [providerSearch, setProviderSearch] = useState(provider);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  // Bumped on a timer so expired snoozes are re-evaluated and signals return.
+  const [snoozeTick, setSnoozeTick] = useState(0);
 
   // Track whether the last auto-load attempt failed so we can show the manual fallback
   const [autoLoadFailed, setAutoLoadFailed] = useState(false);
@@ -134,8 +140,13 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
       filtered = filtered.filter((s) => bookmarkedIds.includes(s.id));
     }
 
+    // #321: hide signals that are currently snoozed; they re-appear once the
+    // snooze expires (snoozeTick forces this to re-run periodically).
+    filtered = selectVisibleSignals(filtered, snoozedMap);
+
     return filtered;
-  }, [allSignals, direction, asset, provider, providerSearch, bookmarkedOnly, bookmarkedIds]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allSignals, direction, asset, provider, providerSearch, bookmarkedOnly, bookmarkedIds, snoozedMap, snoozeTick]);
 
   const signals = useMemo<Signal[]>(() => {
     const copy = [...filteredSignals];
@@ -209,6 +220,16 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
       }
     };
   }, []);
+
+  // #321: periodically drop expired snoozes so snoozed signals are
+  // automatically returned to the feed once their snooze period elapses.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      pruneExpiredSnoozes();
+      setSnoozeTick((tick) => tick + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [pruneExpiredSnoozes]);
 
   const loadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
