@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useOnboardingStore } from "@/store/useOnboardingStore";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Wallet, LayoutList, ArrowLeftRight, X } from "lucide-react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 interface OnboardingStep {
   icon: React.ElementType;
@@ -36,6 +37,12 @@ export function OnboardingFlow() {
   const { dismissed, setCompleted, setDismissed } = useOnboardingStore();
   const [step, setStep] = useState(0);
 
+  // Trap focus inside the onboarding dialog and restore it on dismiss
+  const focusTrapRef = useFocusTrap({
+    isActive: !dismissed,
+    initialFocus: 'button[aria-label^="Next"]',
+  });
+
   if (dismissed) return null;
 
   const current = STEPS[step];
@@ -57,7 +64,7 @@ export function OnboardingFlow() {
       aria-label="Welcome to StellarSwipe"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
     >
-      <div className="relative w-full max-w-sm rounded-3xl border border-white/10 bg-slate-950 p-6 shadow-2xl shadow-black/50">
+      <div ref={focusTrapRef} className="relative w-full max-w-sm rounded-3xl border border-white/10 bg-slate-950 p-6 shadow-2xl shadow-black/50">
         {/* Skip button */}
         <button
           type="button"
