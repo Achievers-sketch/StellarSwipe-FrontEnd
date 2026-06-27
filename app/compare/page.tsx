@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
@@ -46,15 +46,7 @@ function computeBestValues(signals: ReturnType<typeof useComparisonStore.getStat
   return best;
 }
 
-export default function ComparePage() {
-  return (
-    <ComparisonErrorBoundary>
-      <ComparePageInner />
-    </ComparisonErrorBoundary>
-  );
-}
-
-function ComparePageInner() {
+function ComparePageContent() {
   const { signals, removeSignal, clearSignals, hiddenMetrics, toggleMetric, canAdd, addSignal } = useComparisonStore();
   const [addPanelOpen, setAddPanelOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -241,5 +233,13 @@ function ComparePageInner() {
         }
       `}</style>
     </PageTransition>
+  );
+}
+
+export default function ComparePage() {
+  return (
+    <Suspense fallback={null}>
+      <ComparePageContent />
+    </Suspense>
   );
 }
