@@ -29,10 +29,16 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={inter.variable}>
       <head>
-        {/* Apply persisted theme before first paint to avoid flash */}
+        {/*
+         * Blocking inline script — runs synchronously before any paint.
+         * Reads the persisted Zustand theme ("stellar-theme" → state.theme),
+         * falls back to the OS prefers-color-scheme, then applies the correct
+         * .dark / .light class to <html> before any CSS or React hydration.
+         * suppressHydrationWarning on <html> lets React reconcile safely.
+         */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var item=localStorage.getItem('stellar-theme');var theme=item?JSON.parse(item).state?.theme:null; if(!theme){theme=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';} document.documentElement.classList.remove('light','dark'); document.documentElement.classList.add(theme);}catch(e){}})();`,
+            __html: `(function(){try{var s=localStorage.getItem('stellar-theme');var t=s?JSON.parse(s).state?.theme:null;if(t!=='dark'&&t!=='light'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.classList.remove('light','dark');document.documentElement.classList.add(t);}catch(e){document.documentElement.classList.add('dark');}})();`,
           }}
         />
       </head>
