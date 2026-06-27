@@ -1,9 +1,8 @@
 "use client";
 
 import { Wallet, Users, Zap } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { fadeUpVariants, fadeUpVariantsReduced, useScrollViewport } from "@/hooks/useScrollAnimation";
-import { useReducedMotion } from "framer-motion";
 
 const steps = [
   {

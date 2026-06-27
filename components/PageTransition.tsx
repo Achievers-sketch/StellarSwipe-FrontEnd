@@ -1,8 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { ReactNode } from "react";
-import { useReducedMotion } from "framer-motion";
 
 interface PageTransitionProps {
   children: ReactNode;

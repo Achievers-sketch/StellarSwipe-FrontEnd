@@ -161,7 +161,7 @@ export function AppShell({ children }: AppShellProps) {
                     </button>
                   </div>
                 </div>
-              </div>
+              </PortfolioErrorBoundary>
 
               <div className="w-full max-w-md">
                 <PositionStopLossControl />
@@ -185,7 +185,7 @@ export function AppShell({ children }: AppShellProps) {
           walletBalance={250}
           portfolioBalance={portfolioBalance}
         />
-      </main>
+      </div>
     </PageTransition>
   );
 }
