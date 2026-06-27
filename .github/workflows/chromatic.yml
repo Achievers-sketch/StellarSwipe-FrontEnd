@@ -6,13 +6,24 @@ on:
   pull_request:
     branches: [main]
 
+# ── Baseline approval process ─────────────────────────────────────────────────
+# 1. On the FIRST run after adding new stories, Chromatic captures baselines.
+# 2. A project maintainer must review and ACCEPT the baselines in the Chromatic
+#    UI (https://www.chromatic.com) before they are used for comparisons.
+# 3. On subsequent PRs, Chromatic diffs every snapshot against the approved
+#    baseline. Any visual change surfaces as a "diff" requiring review.
+# 4. The [Visual Regression] story in TradeConfirmationModal.stories.tsx
+#    intentionally misaligns the fee row — approve the normal baseline first,
+#    then this story confirms the tooling catches the change.
+# 5. Set exitZeroOnChanges: false (or remove it) to block PRs on unreviewed diffs.
+
 jobs:
   chromatic:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0   # required for Chromatic TurboSnap
 
       - uses: actions/setup-node@v4
         with:
@@ -25,6 +36,9 @@ jobs:
         uses: chromaui/action@latest
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          # Allow PRs to pass even when visual changes are detected;
+          # a human reviewer must accept/reject diffs in the Chromatic UI.
           exitZeroOnChanges: true
+          # Only snapshot stories affected by changed files (faster CI).
           onlyChanged: true
           storybookBuildDir: storybook-static
