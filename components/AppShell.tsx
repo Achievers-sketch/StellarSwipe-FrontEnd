@@ -12,6 +12,7 @@ import { PageTransition } from "@/components/PageTransition";
 import { PortfolioAllocationChart } from "@/components/chart/PortfolioAllocationChart";
 import { PortfolioSummaryCards } from "@/components/PortfolioSummaryCards";
 import { PnLWidget } from "@/components/chart/PnLWidget";
+import { DashboardWidgets } from "@/components/DashboardWidgets";
 import { OnChainConfirmationStatus } from "@/components/OnChainConfirmationStatus";
 import { TransactionActivityFeed } from "@/components/TransactionActivityFeed";
 import { PositionStopLossControl } from "@/components/PositionStopLossControl";
@@ -152,6 +153,18 @@ export function AppShell({ children }: AppShellProps) {
                   </button>
                 </div>
               </div>
+
+              <div className="w-full max-w-md">
+                <PositionStopLossControl />
+              </div>
+
+              <div className="w-full">
+                <TransactionActivityFeed />
+              </div>
+            </div>
+            {/* Right Column: Dashboard widgets */}
+            <div className="w-full flex flex-col gap-6">
+              <DashboardWidgets />
             </div>
           </div>
         </div>
