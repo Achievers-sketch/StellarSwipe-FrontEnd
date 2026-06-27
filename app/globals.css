@@ -52,6 +52,130 @@
 }
 
 @layer base {
+  @media (forced-colors: active) {
+    :root {
+      color-scheme: dark;
+      --background: Canvas;
+      --surface: Canvas;
+      --surface-high: Canvas;
+      --overlay: Canvas;
+      --foreground: CanvasText;
+      --foreground-muted: CanvasText;
+      --foreground-subtle: GrayText;
+      --border: CanvasText;
+      --border-strong: CanvasText;
+      --input: Canvas;
+      --ring: Highlight;
+      --accent-primary: Highlight;
+      --accent-sky: Highlight;
+      --accent-success: Highlight;
+      --accent-danger: Highlight;
+      --accent-warning: Highlight;
+      --accent-market: Highlight;
+    }
+
+    * {
+      forced-color-adjust: auto;
+    }
+
+    button,
+    input,
+    select,
+    textarea,
+    [role="button"],
+    [role="switch"],
+    [role="tab"],
+    [role="dialog"],
+    [tabindex]:not([tabindex="-1"]) {
+      forced-color-adjust: auto;
+      color: CanvasText;
+      background-color: Canvas;
+      border-color: CanvasText;
+    }
+
+    :focus-visible {
+      outline: 2px solid Highlight !important;
+      outline-offset: 2px;
+    }
+
+    .bg-primary,
+    .bg-destructive,
+    .bg-accent-primary,
+    .bg-blue-500,
+    .bg-blue-500\/20,
+    .bg-green-500,
+    .bg-green-500\/20,
+    .bg-red-500,
+    .bg-red-500\/20,
+    .bg-emerald-500,
+    .bg-emerald-500\/10,
+    .bg-yellow-500,
+    .bg-yellow-500\/10,
+    .bg-slate-500,
+    .bg-slate-500\/10,
+    .bg-white\/5,
+    .bg-white\/10 {
+      background-color: Highlight !important;
+      border-color: HighlightText !important;
+      color: HighlightText !important;
+    }
+
+    .text-blue-400,
+    .text-blue-500,
+    .text-green-400,
+    .text-green-500,
+    .text-red-400,
+    .text-red-500,
+    .text-emerald-300,
+    .text-emerald-400,
+    .text-yellow-400,
+    .text-slate-400,
+    .text-slate-300,
+    .text-white,
+    .text-primary-foreground,
+    .text-destructive-foreground {
+      color: HighlightText !important;
+    }
+
+    .border-blue-500\/30,
+    .border-blue-500\/40,
+    .border-green-500\/40,
+    .border-red-500\/40,
+    .border-emerald-500\/20,
+    .border-emerald-500\/40,
+    .border-yellow-500\/40,
+    .border-slate-600\/60,
+    .border-white\/10,
+    .border-white\/20,
+    .border-border,
+    .border-input {
+      border-color: CanvasText !important;
+    }
+
+    .fc-badge,
+    .fc-pill,
+    .fc-toggle {
+      border: 2px solid CanvasText;
+      background-color: Canvas;
+      color: CanvasText;
+    }
+
+    .fc-badge {
+      padding-inline: 0.625rem;
+    }
+
+    .fc-pill {
+      border-radius: 9999px;
+    }
+
+    .fc-toggle {
+      border-radius: 9999px;
+      outline-offset: 2px;
+    }
+  }
+}
+
+@layer base {
   /*
    * StellarSwipe design tokens — dark-first theme.
    * All values are HSL channels (no `hsl()` wrapper) so Tailwind can apply
