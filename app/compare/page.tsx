@@ -10,6 +10,7 @@ import { PageTransition } from "@/components/PageTransition";
 import { useComparisonStore } from "@/store/useComparisonStore";
 import { MetricToggleBar } from "@/components/comparison/MetricToggleBar";
 import { fetchSignals } from "@/lib/api";
+import { ComparisonErrorBoundary } from "@/components/ComparisonErrorBoundary";
 
 const ComparisonCard = dynamic(
   () => import("@/components/comparison/ComparisonCard").then((m) => m.ComparisonCard),
