@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Shield, ChevronRight, Mail } from "lucide-react";
+import { Bug, ChevronRight, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { TwoFactorSetupWizard, DisableTwoFactor } from "@/components/TwoFactorSetupWizard";
-import { securityProgram } from "@/lib/securityProgram";
+import {
+  DisableTwoFactor,
+  TwoFactorSetupWizard,
+} from "@/components/TwoFactorSetupWizard";
+import { bugBountyProgram } from "@/content/security";
 
 export default function SecuritySettingsPage() {
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
@@ -78,61 +81,78 @@ export default function SecuritySettingsPage() {
           />
         )}
 
-        <Card role="region" aria-labelledby="bug-bounty-program-title">
+        <Card>
           <CardHeader>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 id="bug-bounty-program-title" className="text-sm font-semibold text-foreground">
-                  {securityProgram.title}
-                </h2>
-                <p className="mt-1 text-xs text-foreground-muted">
-                  {securityProgram.summary}
-                </p>
-              </div>
-              <Shield size={18} className="shrink-0 text-blue-400" aria-hidden="true" />
+            <div className="flex items-center gap-2">
+              <Bug size={16} className="text-blue-400" aria-hidden="true" />
+              <h2 className="text-sm font-semibold text-foreground">
+                {bugBountyProgram.title}
+              </h2>
             </div>
+            <p className="text-xs text-foreground-muted">
+              {bugBountyProgram.summary}
+            </p>
           </CardHeader>
-          <CardContent className="space-y-5 px-5 pb-5 text-sm">
+          <CardContent className="space-y-5 text-sm">
             <section aria-labelledby="bug-bounty-scope">
-              <h3 id="bug-bounty-scope" className="text-xs font-semibold uppercase text-foreground-muted">
+              <h3
+                id="bug-bounty-scope"
+                className="text-xs font-semibold uppercase tracking-wide text-foreground-muted"
+              >
                 Scope
               </h3>
               <ul className="mt-2 list-disc space-y-1 pl-5 text-foreground-muted">
-                {securityProgram.scope.map((item) => (
+                {bugBountyProgram.scope.map((item) => (
                   <li key={item}>{item}</li>
                 ))}
               </ul>
             </section>
 
             <section aria-labelledby="bug-bounty-rewards">
-              <h3 id="bug-bounty-rewards" className="text-xs font-semibold uppercase text-foreground-muted">
-                Reward tiers
+              <h3
+                id="bug-bounty-rewards"
+                className="text-xs font-semibold uppercase tracking-wide text-foreground-muted"
+              >
+                Reward review
               </h3>
-              <dl className="mt-2 grid gap-2">
-                {securityProgram.rewardTiers.map((tier) => (
-                  <div
-                    key={tier.severity}
-                    className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2"
-                  >
-                    <dt className="font-medium text-foreground">{tier.severity}</dt>
-                    <dd className="text-right text-xs text-foreground-muted">{tier.reward}</dd>
+              <dl className="mt-2 space-y-3">
+                {bugBountyProgram.rewardTiers.map((tier) => (
+                  <div key={tier.severity}>
+                    <dt className="font-medium text-foreground">
+                      {tier.severity}
+                    </dt>
+                    <dd className="text-xs leading-5 text-foreground-muted">
+                      {tier.description}
+                    </dd>
                   </div>
                 ))}
               </dl>
             </section>
 
             <section aria-labelledby="bug-bounty-submit">
-              <h3 id="bug-bounty-submit" className="text-xs font-semibold uppercase text-foreground-muted">
+              <h3
+                id="bug-bounty-submit"
+                className="text-xs font-semibold uppercase tracking-wide text-foreground-muted"
+              >
                 Submission process
               </h3>
-              <p className="mt-2 text-foreground-muted">{securityProgram.submission.text}</p>
-              <Button asChild size="sm" className="mt-3 gap-1.5">
-                <a href={securityProgram.submission.href}>
-                  <Mail size={13} aria-hidden="true" />
-                  {securityProgram.submission.label}
-                </a>
-              </Button>
+              <ol className="mt-2 list-decimal space-y-1 pl-5 text-foreground-muted">
+                {bugBountyProgram.submissionSteps.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </ol>
             </section>
+
+            <Button size="sm" asChild>
+              <a
+                href={bugBountyProgram.contact.href}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {bugBountyProgram.contact.label}
+                <ChevronRight size={13} aria-hidden="true" />
+              </a>
+            </Button>
           </CardContent>
         </Card>
       </div>
