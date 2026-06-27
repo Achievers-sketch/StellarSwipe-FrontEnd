@@ -9,6 +9,7 @@ export interface WebhookDelivery {
   status: 'success' | 'failed';
   statusCode?: number;
   error?: string;
+  attemptNumber?: number;
 }
 
 export interface Webhook {
@@ -19,6 +20,8 @@ export interface Webhook {
   createdAt: string;
   deliveries: WebhookDelivery[];
   rateLimit: number; // remaining calls this minute
+  maxRetries: number;
+  backoffInterval: number; // base backoff in milliseconds
 }
 
 interface WebhookStore {
@@ -29,6 +32,7 @@ interface WebhookStore {
   recordDelivery: (webhookId: string, delivery: WebhookDelivery) => void;
   decrementRateLimit: (id: string) => void;
   resetRateLimits: () => void;
+  updateRetryConfig: (id: string, maxRetries: number, backoffInterval: number) => void;
 }
 
 function generateSecret(): string {
@@ -51,6 +55,8 @@ export const useWebhookStore = create<WebhookStore>()(
           createdAt: new Date().toISOString(),
           deliveries: [],
           rateLimit: 60,
+          maxRetries: 3,
+          backoffInterval: 1000,
         };
         set((s) => ({ webhooks: [...s.webhooks, webhook] }));
         return webhook;
@@ -82,6 +88,13 @@ export const useWebhookStore = create<WebhookStore>()(
 
       resetRateLimits: () =>
         set((s) => ({ webhooks: s.webhooks.map((w) => ({ ...w, rateLimit: 60 })) })),
+
+      updateRetryConfig: (id, maxRetries, backoffInterval) =>
+        set((s) => ({
+          webhooks: s.webhooks.map((w) =>
+            w.id === id ? { ...w, maxRetries, backoffInterval } : w
+          ),
+        })),
     }),
     { name: 'stellarswipe:webhooks' }
   )

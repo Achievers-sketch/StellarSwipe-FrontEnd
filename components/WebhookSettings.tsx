@@ -13,7 +13,7 @@ const EVENT_OPTIONS: { value: WebhookEventType; label: string }[] = [
 ];
 
 export function WebhookSettings() {
-  const { webhooks, addWebhook, removeWebhook, updateEvents } = useWebhookStore();
+  const { webhooks, addWebhook, removeWebhook, updateEvents, updateRetryConfig } = useWebhookStore();
   const [url, setUrl] = useState("");
   const [selectedEvents, setSelectedEvents] = useState<WebhookEventType[]>(["new_signal"]);
   const [testStatus, setTestStatus] = useState<Record<string, { state: "sending" | "success" | "failed"; message: string }>>({});
@@ -191,6 +191,36 @@ export function WebhookSettings() {
             Rate limit: <span className={wh.rateLimit < 10 ? "text-yellow-500 font-medium" : ""}>{wh.rateLimit}/60</span> remaining this minute
           </div>
 
+          {/* Retry configuration */}
+          <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground border-t pt-3">
+            <span className="font-medium text-foreground">Retry config:</span>
+            <label className="flex items-center gap-1">
+              Max retries:
+              <input
+                type="number"
+                min={0}
+                max={10}
+                value={wh.maxRetries}
+                onChange={(e) => updateRetryConfig(wh.id, Number(e.target.value), wh.backoffInterval)}
+                className="ml-1 w-14 rounded border bg-background px-2 py-0.5 text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                aria-label={`Max retries for ${wh.url}`}
+              />
+            </label>
+            <label className="flex items-center gap-1">
+              Backoff (ms):
+              <input
+                type="number"
+                min={100}
+                max={60000}
+                step={100}
+                value={wh.backoffInterval}
+                onChange={(e) => updateRetryConfig(wh.id, wh.maxRetries, Number(e.target.value))}
+                className="ml-1 w-20 rounded border bg-background px-2 py-0.5 text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                aria-label={`Backoff interval for ${wh.url}`}
+              />
+            </label>
+          </div>
+
           {/* Delivery history */}
           {wh.deliveries.length > 0 && (
             <details className="text-xs">
@@ -204,6 +234,34 @@ export function WebhookSettings() {
                     <span>{d.status === "success" ? `✓ ${d.statusCode}` : `✗ ${d.error}`}</span>
                   </div>
                 ))}
+              </div>
+            </details>
+          )}
+
+          {/* Failure history */}
+          {wh.deliveries.filter((d) => d.status === "failed").length > 0 && (
+            <details className="text-xs">
+              <summary className="cursor-pointer text-red-500 hover:text-red-600">
+                Failure history ({wh.deliveries.filter((d) => d.status === "failed").length})
+              </summary>
+              <div className="mt-2 space-y-1 max-h-48 overflow-y-auto" role="log" aria-label="Webhook failure history">
+                {wh.deliveries
+                  .filter((d) => d.status === "failed")
+                  .map((d) => (
+                    <div
+                      key={d.id}
+                      className="grid grid-cols-3 gap-2 px-2 py-1.5 rounded bg-red-500/10 text-red-500"
+                    >
+                      <span title={d.timestamp}>{new Date(d.timestamp).toLocaleTimeString()}</span>
+                      <span>Status: {d.statusCode ?? "N/A"}</span>
+                      <span>Attempt #{d.attemptNumber ?? "?"}</span>
+                      {d.error && (
+                        <span className="col-span-3 truncate text-red-400" title={d.error}>
+                          {d.error}
+                        </span>
+                      )}
+                    </div>
+                  ))}
               </div>
             </details>
           )}
