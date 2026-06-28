@@ -9,11 +9,15 @@ import {
   TwoFactorSetupWizard,
 } from "@/components/TwoFactorSetupWizard";
 import { bugBountyProgram } from "@/content/security";
+import { auditReports } from "@/content/audits";
 import { AnalyticsConsentToggle } from "@/components/AnalyticsConsentToggle";
+import { NotificationPermissionButton } from "@/components/NotificationPermissionButton";
+import { useNotificationPreference } from "@/hooks/useNotificationPreference";
 
 export default function SecuritySettingsPage() {
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [showSetup, setShowSetup] = useState(false);
+  const { categoryPreferences, toggleCategory } = useNotificationPreference();
 
   function handleSetupComplete() {
     setTwoFactorEnabled(true);
@@ -92,6 +96,124 @@ export default function SecuritySettingsPage() {
           </CardHeader>
           <CardContent className="px-5 pb-5">
             <AnalyticsConsentToggle />
+          </CardContent>
+        </Card>
+
+        {/* Notification Preferences */}
+        <Card>
+          <CardHeader>
+            <h2 className="text-sm font-semibold text-foreground">
+              Notification Preferences
+            </h2>
+            <p className="text-xs text-foreground-muted">
+              Choose the notification types you want to receive.
+            </p>
+          </CardHeader>
+          <CardContent className="px-5 pb-5 space-y-4">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-foreground">
+                  Browser/Push Alerts
+                </span>
+                <NotificationPermissionButton />
+              </div>
+              <hr className="border-border" />
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label htmlFor="toggle-priceAlerts" className="text-xs font-semibold text-foreground">
+                      Price Alerts
+                    </label>
+                    <p className="text-[11px] text-foreground-muted">
+                      Receive alerts on significant price changes.
+                    </p>
+                  </div>
+                  <input
+                    id="toggle-priceAlerts"
+                    type="checkbox"
+                    checked={categoryPreferences.priceAlerts}
+                    onChange={(e) => toggleCategory("priceAlerts", e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500 accent-blue-500"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label htmlFor="toggle-newSignals" className="text-xs font-semibold text-foreground">
+                      New Signals
+                    </label>
+                    <p className="text-[11px] text-foreground-muted">
+                      Get notified when new trading signals are published.
+                    </p>
+                  </div>
+                  <input
+                    id="toggle-newSignals"
+                    type="checkbox"
+                    checked={categoryPreferences.newSignals}
+                    onChange={(e) => toggleCategory("newSignals", e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500 accent-blue-500"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label htmlFor="toggle-systemUpdates" className="text-xs font-semibold text-foreground">
+                      System & Trade Updates
+                    </label>
+                    <p className="text-[11px] text-foreground-muted">
+                      Receive transaction outcome and status notifications.
+                    </p>
+                  </div>
+                  <input
+                    id="toggle-systemUpdates"
+                    type="checkbox"
+                    checked={categoryPreferences.systemUpdates}
+                    onChange={(e) => toggleCategory("systemUpdates", e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500 accent-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Smart-Contract Audit Reports */}
+        <Card>
+          <CardHeader>
+            <h2 className="text-sm font-semibold text-foreground">
+              Smart-Contract Audit Reports
+            </h2>
+            <p className="text-xs text-foreground-muted">
+              Review third-party security audits of our protocol.
+            </p>
+          </CardHeader>
+          <CardContent className="px-5 pb-5">
+            {[...auditReports]
+              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+              .map((audit) => (
+                <div
+                  key={audit.id}
+                  className="flex flex-col gap-1 border-b border-border pb-3 mb-3 last:border-0 last:pb-0 last:mb-0"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-foreground">
+                      {audit.auditor}
+                    </span>
+                    <span className="text-xs text-foreground-muted">
+                      {audit.date}
+                    </span>
+                  </div>
+                  <p className="text-xs text-foreground-muted">
+                    Scope: {audit.scope}
+                  </p>
+                  <a
+                    href={audit.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-400 hover:underline inline-flex items-center gap-1 mt-1 w-fit"
+                  >
+                    View Report <ChevronRight size={12} />
+                  </a>
+                </div>
+              ))}
           </CardContent>
         </Card>
 
