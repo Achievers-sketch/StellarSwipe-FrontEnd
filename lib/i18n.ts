@@ -123,7 +123,8 @@ export async function setLocale(locale: Locale) {
 }
 
 /**
- * Translate a key with fallback to English
+ * Translate a key with fallback to English.
+ * In development, logs a clear warning with the active locale when a key is missing.
  */
 export function t(key: string): string {
   // Try current locale first
@@ -132,10 +133,21 @@ export function t(key: string): string {
 
   // Fall back to English
   value = getNestedValue(fallbackTranslations, key);
-  if (value) return value;
+  if (value) {
+    if (process.env.NODE_ENV === "development" && currentLocale !== DEFAULT_LOCALE) {
+      console.warn(
+        `[i18n] Missing translation key "${key}" for locale "${currentLocale}". Falling back to "${DEFAULT_LOCALE}".`
+      );
+    }
+    return value;
+  }
 
-  // Return key itself if not found
-  console.warn(`Missing translation key: ${key}`);
+  // Key missing from all locales
+  if (process.env.NODE_ENV === "development") {
+    console.warn(
+      `[i18n] Missing translation key "${key}" in locale "${currentLocale}" (no fallback found).`
+    );
+  }
   return key;
 }
 
