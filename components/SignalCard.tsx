@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import {
+  animate,
   motion,
   useMotionValue,
   useTransform,
@@ -10,6 +11,7 @@ import {
   type PanInfo,
 } from "framer-motion";
 import {
+  AlarmClock,
   Bookmark,
   Check,
   ChevronDown,
@@ -32,6 +34,9 @@ import { PremiumSignalBadge } from "@/components/PremiumSignalBadge";
 import { ProviderRatingBadge } from "@/components/ProviderRatingBadge";
 import { useDemoModeStore } from "@/store/useDemoModeStore";
 import { useBookmarkActions } from "@/hooks/useBookmarkActions";
+import { useSnoozeActions } from "@/hooks/useSnoozeActions";
+import { DEFAULT_SNOOZE_DURATION_MS } from "@/store/useSnoozeStore";
+import { TINT_THRESHOLD, MAX_TINT_OPACITY, classifyArrowKey } from "@/lib/signalGestures";
 import { usePriceFormat } from "@/hooks/usePriceFormat";
 import { useSignalPrice } from "@/hooks/useSignalPrice";
 import { toast } from "@/lib/toast";
@@ -63,7 +68,10 @@ interface SignalCardProps {
   portfolioBalance?: number;
   onTrade?: (pair: string, price: number) => void;
   onPass?: () => void;
+  onSnooze?: () => void;
   showPassAction?: boolean;
+  /** How long a snooze hides the signal for, in ms. Configurable per #321. */
+  snoozeDurationMs?: number;
 }
 
 const DEFAULT_ROI: ROIPoint[] = [
@@ -102,9 +110,12 @@ export function SignalCard({
   portfolioBalance,
   onTrade,
   onPass,
+  onSnooze,
   showPassAction = true,
+  snoozeDurationMs = DEFAULT_SNOOZE_DURATION_MS,
 }: SignalCardProps) {
   const [dismissed, setDismissed] = useState(false);
+  const [snoozedHidden, setSnoozedHidden] = useState(false);
   const [dismissPending, setDismissPending] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
@@ -120,12 +131,18 @@ export function SignalCard({
   const hasVibratedRef = useRef(false);
   const dismissTimerRef = useRef<number | null>(null);
   const { addBookmark, removeBookmark, hasBookmark } = useBookmarkActions();
+  const { snooze } = useSnoozeActions();
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-300, 300], [-18, 18]);
 
   const tradeOpacity = useTransform(x, [20, SWIPE_THRESHOLD], [0, 1]);
   const passOpacity = useTransform(x, [-20, -SWIPE_THRESHOLD], [0, 1]);
+
+  // #319: directional color tint that deepens as the card is dragged past the
+  // tint threshold — green for trade (right), red for pass (left).
+  const tradeTintOpacity = useTransform(x, [0, TINT_THRESHOLD], [0, MAX_TINT_OPACITY]);
+  const passTintOpacity = useTransform(x, [0, -TINT_THRESHOLD], [0, MAX_TINT_OPACITY]);
 
   const { price, flash, relativeTime } = useSignalPrice(3000);
   const signalId = signalIdProp ?? signalData?.id ?? pair ?? "signal-unknown";
@@ -233,6 +250,25 @@ export function SignalCard({
     setModalOpen(true);
   }
 
+  function handleSnooze() {
+    if (dismissPending || dismissed || snoozedHidden) return;
+    setActionAnnouncement(`Snoozed ${signalAction} signal for ${signalPair}`);
+    setSnoozedHidden(true);
+    snooze(signalId, signalPair, snoozeDurationMs);
+    onSnooze?.();
+  }
+
+  // #320: mirror the pointer-swipe visual feedback when an action is triggered
+  // via the keyboard by briefly animating the card (and its tint overlay) in the
+  // matching direction before resetting to rest.
+  function flashSwipeFeedback(direction: 1 | -1) {
+    if (shouldReduceMotion) return;
+    animate(x, [direction * (TINT_THRESHOLD + 20), 0], {
+      duration: 0.4,
+      ease: "easeOut",
+    });
+  }
+
   function handleModalClose() {
     setModalOpen(false);
     executingRef.current = false;
@@ -250,10 +286,16 @@ export function SignalCard({
   }
 
   function handleKeyDown(e: KeyboardEvent) {
-    if (e.key === "ArrowLeft" && showPassAction) {
+    const arrowAction = classifyArrowKey(e.key, showPassAction);
+    if (arrowAction === "trade") {
       e.preventDefault();
+      flashSwipeFeedback(1);
+      handleExecuteTrade();
+    } else if (arrowAction === "pass") {
+      e.preventDefault();
+      flashSwipeFeedback(-1);
       handlePass();
-    } else if (e.key === "ArrowRight" || e.key === "Enter" || e.key === " ") {
+    } else if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       handleExecuteTrade();
     }
@@ -313,7 +355,7 @@ export function SignalCard({
 
   return (
     <AnimatePresence>
-      {!dismissed && (
+      {!dismissed && !snoozedHidden && (
         <motion.div
           className="relative w-full select-none"
           style={{ x, rotate, touchAction: "pan-y" }}
@@ -330,6 +372,20 @@ export function SignalCard({
             whileTap={{ cursor: "grabbing" }}
             aria-disabled={dismissPending}
           >
+          {/* #319: drag-direction color tint — opacity tracks drag distance */}
+          <motion.div
+            className="pointer-events-none absolute inset-0 z-0 rounded-2xl bg-green-500"
+            style={{ opacity: tradeTintOpacity }}
+            aria-hidden="true"
+            data-testid="signal-trade-tint"
+          />
+          <motion.div
+            className="pointer-events-none absolute inset-0 z-0 rounded-2xl bg-red-500"
+            style={{ opacity: passTintOpacity }}
+            aria-hidden="true"
+            data-testid="signal-pass-tint"
+          />
+
           <motion.div
             className="pointer-events-none absolute inset-0 z-10 flex items-center justify-start rounded-2xl border-2 border-green-500 bg-green-500/10 pl-6"
             style={{ opacity: tradeOpacity }}
@@ -414,6 +470,15 @@ export function SignalCard({
                   )}
                 >
                   <Bookmark size={18} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSnooze}
+                  aria-label={`Snooze ${signalAction} signal for ${signalPair}`}
+                  disabled={dismissPending || dismissed || snoozedHidden}
+                  className="rounded-full bg-white/5 p-2 text-slate-300 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <AlarmClock size={18} aria-hidden="true" />
                 </button>
                 <div className="relative" ref={shareMenuRef}>
                   <Button
