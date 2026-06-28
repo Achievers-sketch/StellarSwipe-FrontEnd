@@ -10,6 +10,8 @@
  *  - Frame / render time (via requestAnimationFrame delta)
  *  - API latency (last fetch duration, patched via PerformanceObserver)
  *  - React Query cache hit status (stale vs fresh)
+ *  - Memory-leak heuristics (active event listener and timer/interval counts
+ *    over time with trend indicators)
  *
  * The overlay is unobtrusive: fixed to the bottom-right corner, semi-transparent,
  * and can be minimised with a single click.
@@ -17,7 +19,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Activity, ChevronDown, ChevronUp } from "lucide-react";
+import { Activity, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PerfMetrics {
@@ -105,6 +107,161 @@ function useCacheHitStatus() {
 
   return cacheHit;
 }
+
+/* ─── Memory-leak heuristic tracking ─────── */
+
+interface ListenerTimerSnapshot {
+  /** Estimated number of active event listeners on the window/document body */
+  listenerCount: number;
+  /** Estimated number of active timers or intervals (based on setInterval calls) */
+  timerCount: number;
+  /** Total (listeners + timers) */
+  total: number;
+}
+
+/**
+ * Snapshot the current active listener count by checking performance
+ * entries or using a heuristic approach.  Since there is no browser API
+ * that exposes the real number of registered listeners, we approximate it
+ * by scanning all DOM elements reachable from the root for any custom
+ * "listener" properties that frameworks like React leave behind.
+ *
+ * The true value is less important than seeing the number *trend upward*
+ * over time – a steady increase is the heuristic we flag as a potential
+ * leak.
+ */
+function snapshotListenersAndTimers(): ListenerTimerSnapshot {
+  let listenerCount = 0;
+
+  if (typeof document !== "undefined") {
+    // Walk a reasonable sample of the DOM for properties that look like
+    // attached event handlers (React leaves __reactEventHandlers, etc.).
+    const scanned = new Set<Node>();
+    const queue: Node[] = [document.body ?? document.documentElement];
+    let budget = 500; // scan at most 500 nodes to avoid perf impact
+
+    while (queue.length > 0 && budget > 0) {
+      const node = queue.pop()!;
+      if (scanned.has(node)) continue;
+      scanned.add(node);
+      budget--;
+
+      // Check for React-internal event handler tracking
+      const key = Object.keys(node as Record<string, unknown>).find(
+        (k) => k.startsWith("__reactEventHandlers") || k.startsWith("__reactProps")
+      );
+      if (key) {
+        const handlers = (node as Record<string, unknown>)[key] as
+          | Record<string, unknown>
+          | undefined;
+        if (handlers) {
+          Object.keys(handlers).forEach((prop) => {
+            if (prop.startsWith("on") && typeof handlers[prop] === "function") {
+              listenerCount++;
+            }
+          });
+        }
+      }
+
+      if (node.hasChildNodes()) {
+        for (let i = 0; i < node.childNodes.length; i++) {
+          queue.push(node.childNodes[i]);
+        }
+      }
+    }
+  }
+
+  // Timer heuristic: count all intervals that the app may have registered.
+  // We track this by monkey-patching setInterval / clearInterval (see below)
+  // and storing the result in a module-level counter.
+  const timerCount = activeIntervalCount;
+
+  return {
+    listenerCount,
+    timerCount,
+    total: listenerCount + timerCount,
+  };
+}
+
+/** Module-level counter for active intervals (patched below in dev). */
+let activeIntervalCount = 0;
+let intervalsPatched = false;
+
+function patchIntervalsForDev(): void {
+  if (intervalsPatched || typeof setInterval === "undefined") return;
+  intervalsPatched = true;
+
+  const origSetInterval = globalThis.setInterval.bind(globalThis);
+  const origClearInterval = globalThis.clearInterval.bind(globalThis);
+
+  // We keep a Map to track which interval IDs are still active.
+  const active = new Map<ReturnType<typeof setInterval>, true>();
+
+  const patchedSetInterval = ((handler: TimerHandler, timeout?: number, ...args: unknown[]) => {
+    const id = origSetInterval(handler, timeout, ...args);
+    active.set(id, true);
+    activeIntervalCount = active.size;
+    return id;
+  }) as typeof globalThis.setInterval;
+
+  const patchedClearInterval = ((id: ReturnType<typeof setInterval> | undefined) => {
+    if (id != null) {
+      active.delete(id);
+      activeIntervalCount = active.size;
+    }
+    origClearInterval(id);
+  }) as typeof globalThis.clearInterval;
+
+  globalThis.setInterval = patchedSetInterval;
+  globalThis.clearInterval = patchedClearInterval;
+}
+
+/** Return a simple trend label based on a sliding-window of snapshots. */
+type TrendDirection = "stable" | "increasing" | "decreasing" | "unknown";
+
+function computeTrend(snapshots: ListenerTimerSnapshot[]): TrendDirection {
+  if (snapshots.length < 3) return "unknown";
+
+  // Look at the last 3 values for the total
+  const vals = snapshots.slice(-3).map((s) => s.total);
+  // If every step goes up by at least 1, flag as increasing
+  if (vals[2] > vals[1] && vals[1] > vals[0]) return "increasing";
+  if (vals[2] < vals[1] && vals[1] < vals[0]) return "decreasing";
+  return "stable";
+}
+
+function useListenerTimerTracking() {
+  const [snapshots, setSnapshots] = useState<ListenerTimerSnapshot[]>([]);
+  const [trend, setTrend] = useState<TrendDirection>("unknown");
+
+  useEffect(() => {
+    patchIntervalsForDev();
+
+    const interval = setInterval(() => {
+      const snapshot = snapshotListenersAndTimers();
+      setSnapshots((prev) => {
+        const next = [...prev, snapshot].slice(-10); // keep last 10
+        return next;
+      });
+    }, 2000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (snapshots.length > 0) {
+      setTrend(computeTrend(snapshots));
+    }
+  }, [snapshots]);
+
+  // Expose latest snapshot and trend
+  const latest = snapshots.length > 0 ? snapshots[snapshots.length - 1] : null;
+  return { latest, trend, snapshots };
+}
+
+/* ─── End memory-leak heuristics ─────────── */
 
 function MetricRow({
   label,
@@ -235,6 +392,7 @@ function DevPerfOverlayInner() {
   const [minimised, setMinimised] = useState(false);
   const [showWaterfall, setShowWaterfall] = useState(false);
   const list = useNetworkRequests();
+  const { latest: leakSnapshot, trend: leakTrend } = useListenerTimerTracking();
 
   const frameStatus =
     frameMs === 0
@@ -418,6 +576,39 @@ function DevPerfOverlayInner() {
               value={cacheHit === null ? "—" : cacheHit ? "HIT" : "MISS"}
               status={cacheStatus}
             />
+            {/* Memory-leak heuristics */}
+            {leakSnapshot && (
+              <div className="space-y-0.5 pt-0.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-slate-500 text-[10px]">Leak</span>
+                  {leakTrend === "increasing" && (
+                    <span
+                      className="inline-flex items-center gap-0.5 text-red-400"
+                      title="Potential memory leak detected – counts are steadily rising"
+                    >
+                      <AlertTriangle size={10} aria-hidden="true" />
+                      <span className="text-[9px] font-semibold">RISING</span>
+                    </span>
+                  )}
+                  {leakTrend === "stable" && (
+                    <span className="text-[9px] text-emerald-400 font-semibold">STABLE</span>
+                  )}
+                  {leakTrend === "decreasing" && (
+                    <span className="text-[9px] text-emerald-400 font-semibold">CLEANING</span>
+                  )}
+                  {leakTrend === "unknown" && (
+                    <span className="text-[9px] text-slate-600">sampling…</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 text-[9px] font-mono tabular-nums text-slate-400">
+                  <span>L:{leakSnapshot.listenerCount}</span>
+                  <span>T:{leakSnapshot.timerCount}</span>
+                  <span className="text-slate-600">
+                    {leakSnapshot.total}
+                  </span>
+                </div>
+              </div>
+            )}
             <button
               type="button"
               onClick={() => setShowWaterfall((v) => !v)}
