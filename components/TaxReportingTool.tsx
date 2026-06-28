@@ -19,9 +19,11 @@ import { useTransactionStore } from "@/store/useTransactionStore";
 import {
   type TaxJurisdiction,
   type TaxableTransaction,
+  type CsvPreset,
   TAX_RATES,
+  CSV_PRESETS,
   computeTaxReport,
-  exportToCsv,
+  exportToCsvWithPreset,
   formatForTurboTax,
   formatForTaxAct,
   triggerDownload,
@@ -90,6 +92,7 @@ export function TaxReportingTool() {
   const { history } = useTransactionStore();
   const [jurisdiction, setJurisdiction] = useState<TaxJurisdiction>("US");
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
+  const [csvPreset, setCsvPreset] = useState<CsvPreset>("generic");
 
   const transactions = useMemo(() => deriveTransactions(history), [history]);
 
@@ -113,10 +116,10 @@ export function TaxReportingTool() {
       : null;
 
   function handleExportCsv() {
-    const csv = exportToCsv(currentReport);
+    const csv = exportToCsvWithPreset(currentReport, csvPreset);
     triggerDownload(
       csv,
-      `tax-report-${selectedYear}-${jurisdiction}.csv`,
+      `tax-report-${selectedYear}-${jurisdiction}-${csvPreset}.csv`,
       "text/csv"
     );
   }
@@ -407,6 +410,28 @@ export function TaxReportingTool() {
           </p>
         </CardHeader>
         <CardContent className="px-4 pb-4">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="csv-preset-select"
+              className="text-xs font-medium text-foreground-muted"
+            >
+              CSV Format
+            </label>
+            <select
+              id="csv-preset-select"
+              value={csvPreset}
+              onChange={(e) => setCsvPreset(e.target.value as CsvPreset)}
+              className="w-48 rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              aria-label="Select CSV export format"
+            >
+              {(Object.keys(CSV_PRESETS) as CsvPreset[]).map((key) => (
+                <option key={key} value={key}>
+                  {CSV_PRESETS[key].label}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="flex flex-wrap gap-2">
             <Button
               size="sm"
@@ -449,6 +474,7 @@ export function TaxReportingTool() {
               TaxAct (.csv)
             </Button>
           </div>
+        </div>
         </CardContent>
       </Card>
 

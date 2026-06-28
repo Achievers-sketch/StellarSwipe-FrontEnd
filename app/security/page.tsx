@@ -9,6 +9,7 @@ import {
   TwoFactorSetupWizard,
 } from "@/components/TwoFactorSetupWizard";
 import { bugBountyProgram } from "@/content/security";
+import { AnalyticsConsentToggle } from "@/components/AnalyticsConsentToggle";
 
 export default function SecuritySettingsPage() {
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
@@ -80,6 +81,19 @@ export default function SecuritySettingsPage() {
             onCancel={() => setShowSetup(false)}
           />
         )}
+
+        {/* Privacy */}
+        <Card>
+          <CardHeader>
+            <h2 className="text-sm font-semibold text-foreground">Privacy</h2>
+            <p className="text-xs text-foreground-muted">
+              Control how your usage data is collected.
+            </p>
+          </CardHeader>
+          <CardContent className="px-5 pb-5">
+            <AnalyticsConsentToggle />
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
