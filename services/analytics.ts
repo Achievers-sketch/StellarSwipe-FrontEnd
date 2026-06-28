@@ -5,7 +5,11 @@
  * In development builds, all tracked events are also forwarded to any registered
  * dev listeners so they can be surfaced in the AnalyticsDebugConsole overlay
  * (see @/components/AnalyticsDebugConsole).
+ *
+ * Respects the user's analytics consent preference (stored in localStorage via
+ * useAnalyticsConsentStore). When consent is revoked, track() is a no-op.
  */
+import { isAnalyticsEnabled } from "@/store/useAnalyticsConsentStore";
 
 export interface AnalyticsProperties {
   [key: string]: string | number | boolean | null | undefined;
@@ -71,6 +75,8 @@ function scheduleNonBlocking(callback: () => void): void {
  */
 const analyticsService: AnalyticsService = {
   track(event: string, properties?: AnalyticsProperties) {
+    if (!isAnalyticsEnabled()) return;
+
     const entry: AnalyticsEventEntry = {
       id: `evt_${++eventCounter}_${Date.now()}`,
       name: event,

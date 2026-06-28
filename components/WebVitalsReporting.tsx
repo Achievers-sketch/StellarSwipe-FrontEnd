@@ -15,6 +15,7 @@
 
 import { useReportWebVitals } from "next/web-vitals";
 import analyticsService from "@/services/analytics";
+import { useAnalyticsConsentStore } from "@/store/useAnalyticsConsentStore";
 
 // Sampling rate configuration (default: 10% of page loads)
 const SAMPLING_RATE = 
@@ -33,9 +34,10 @@ function shouldReport(): boolean {
 }
 
 export function WebVitalsReporting() {
+  const analyticsEnabled = useAnalyticsConsentStore((s) => s.analyticsEnabled);
+
   useReportWebVitals((metric) => {
-    // Skip reporting if not in production or not sampled
-    if (!shouldReport()) return;
+    if (!shouldReport() || !analyticsEnabled) return;
 
     // Map Next.js metric names to more readable names
     const metricNameMap: Record<string, string> = {
