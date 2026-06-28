@@ -1,6 +1,5 @@
-import type { Config } from "jest";
-
-const config: Config = {
+/** @type {import('jest').Config} */
+const config = {
   preset: "ts-jest",
   testEnvironment: "node",
   transform: {
@@ -25,4 +24,4 @@ const config: Config = {
   transformIgnorePatterns: ["node_modules/(?!(msw|@mswjs)/)"],
 };
 
-export default config;
+module.exports = config;
