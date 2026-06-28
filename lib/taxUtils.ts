@@ -147,32 +147,90 @@ export function computeTaxReport(
   };
 }
 
-export function exportToCsv(report: TaxReport): string {
-  const headers = [
-    "Date",
-    "Asset Pair",
-    "Amount",
-    "Cost Basis (USD)",
-    "Proceeds (USD)",
-    "Gain/Loss (USD)",
-    "Fees (USD)",
-    "Term",
-    "Foreign Currency",
-    "Conversion Rate",
-  ];
-  const rows = report.entries.map((e) => [
-    e.date.toISOString().split("T")[0],
-    e.assetPair,
-    e.amount.toFixed(6),
-    e.costBasis.toFixed(2),
-    e.proceeds.toFixed(2),
-    e.gainLoss.toFixed(2),
-    e.fees.toFixed(4),
-    e.isLongTerm ? "Long-term" : "Short-term",
-    e.foreignCurrency ?? "",
-    e.conversionRate != null ? e.conversionRate.toFixed(6) : "",
-  ]);
+export type CsvPreset = "generic" | "cointracker" | "koinly";
+
+export interface CsvPresetDefinition {
+  label: string;
+  headers: string[];
+  row: (e: TaxEntry) => string[];
+}
+
+export const CSV_PRESETS: Record<CsvPreset, CsvPresetDefinition> = {
+  generic: {
+    label: "Generic Spreadsheet",
+    headers: [
+      "Date",
+      "Asset Pair",
+      "Amount",
+      "Cost Basis (USD)",
+      "Proceeds (USD)",
+      "Gain/Loss (USD)",
+      "Fees (USD)",
+      "Term",
+      "Foreign Currency",
+      "Conversion Rate",
+    ],
+    row: (e) => [
+      e.date.toISOString().split("T")[0],
+      e.assetPair,
+      e.amount.toFixed(6),
+      e.costBasis.toFixed(2),
+      e.proceeds.toFixed(2),
+      e.gainLoss.toFixed(2),
+      e.fees.toFixed(4),
+      e.isLongTerm ? "Long-term" : "Short-term",
+      e.foreignCurrency ?? "",
+      e.conversionRate != null ? e.conversionRate.toFixed(6) : "",
+    ],
+  },
+  cointracker: {
+    label: "CoinTracker",
+    headers: ["Date", "Received Quantity", "Received Currency", "Sent Quantity", "Sent Currency", "Fee Amount", "Fee Currency", "Tag"],
+    row: (e) => {
+      const [base, quote] = e.assetPair.split("/");
+      return [
+        e.date.toISOString().split("T")[0],
+        e.proceeds.toFixed(2),
+        quote ?? "USD",
+        e.amount.toFixed(6),
+        base ?? e.assetPair,
+        e.fees.toFixed(4),
+        quote ?? "USD",
+        e.isLongTerm ? "long-term" : "short-term",
+      ];
+    },
+  },
+  koinly: {
+    label: "Koinly",
+    headers: ["Date", "Sent Amount", "Sent Currency", "Received Amount", "Received Currency", "Fee Amount", "Fee Currency", "Net Worth Amount", "Net Worth Currency", "Label", "Description", "TxHash"],
+    row: (e) => {
+      const [base, quote] = e.assetPair.split("/");
+      return [
+        e.date.toISOString(),
+        e.amount.toFixed(6),
+        base ?? e.assetPair,
+        e.proceeds.toFixed(2),
+        quote ?? "USD",
+        e.fees.toFixed(4),
+        quote ?? "USD",
+        e.proceeds.toFixed(2),
+        quote ?? "USD",
+        "",
+        e.assetPair,
+        e.id,
+      ];
+    },
+  },
+};
+
+export function exportToCsvWithPreset(report: TaxReport, preset: CsvPreset = "generic"): string {
+  const { headers, row } = CSV_PRESETS[preset];
+  const rows = report.entries.map(row);
   return [headers, ...rows].map((r) => r.map((v) => `"${v}"`).join(",")).join("\n");
+}
+
+export function exportToCsv(report: TaxReport): string {
+  return exportToCsvWithPreset(report, "generic");
 }
 
 export function formatForTurboTax(report: TaxReport): string {
