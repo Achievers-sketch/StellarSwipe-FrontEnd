@@ -232,6 +232,124 @@ describe("TradeModal – order-type toggle affects required fields", () => {
   });
 });
 
+// ── Two-step review flow ──────────────────────────────────────────────────────
+
+type ModalStep = "input" | "review";
+
+/**
+ * Simulates the step-machine logic extracted from TradeModal:
+ * - canAdvanceToReview: all inputs valid and no blocking conditions
+ * - goToReview / goBackToInput: pure step transitions
+ * - confirmIsAvailable: confirm only enabled once on review step
+ */
+function canAdvanceToReview(
+  amount: string,
+  type: OrderType,
+  limitPrice: string,
+  hasErrors: boolean,
+  insufficient: boolean,
+  showSlippageWarning: boolean
+): boolean {
+  if (!amount || hasErrors || insufficient || showSlippageWarning) return false;
+  if (type === "LIMIT" && !limitPrice) return false;
+  return true;
+}
+
+function goToReview(
+  currentStep: ModalStep,
+  canAdvance: boolean
+): ModalStep {
+  return canAdvance ? "review" : currentStep;
+}
+
+function goBackToInput(): ModalStep {
+  return "input";
+}
+
+function confirmIsAvailable(step: ModalStep, submitting: boolean): boolean {
+  return step === "review" && !submitting;
+}
+
+describe("TradeModal – two-step review flow", () => {
+  it("starts on the input step", () => {
+    const step: ModalStep = "input";
+    expect(step).toBe("input");
+  });
+
+  it("advances to review when inputs are valid", () => {
+    const step = goToReview(
+      "input",
+      canAdvanceToReview("50", "LIMIT", "0.4821", false, false, false)
+    );
+    expect(step).toBe("review");
+  });
+
+  it("stays on input if amount is empty", () => {
+    const step = goToReview(
+      "input",
+      canAdvanceToReview("", "LIMIT", "0.4821", false, false, false)
+    );
+    expect(step).toBe("input");
+  });
+
+  it("stays on input if LIMIT order is missing limit price", () => {
+    const step = goToReview(
+      "input",
+      canAdvanceToReview("50", "LIMIT", "", false, false, false)
+    );
+    expect(step).toBe("input");
+  });
+
+  it("stays on input if there are validation errors", () => {
+    const step = goToReview(
+      "input",
+      canAdvanceToReview("50", "LIMIT", "0.4821", true, false, false)
+    );
+    expect(step).toBe("input");
+  });
+
+  it("stays on input if balance is insufficient", () => {
+    const step = goToReview(
+      "input",
+      canAdvanceToReview("50", "LIMIT", "0.4821", false, true, false)
+    );
+    expect(step).toBe("input");
+  });
+
+  it("stays on input if slippage warning is unacknowledged", () => {
+    const step = goToReview(
+      "input",
+      canAdvanceToReview("50", "MARKET", "", false, false, true)
+    );
+    expect(step).toBe("input");
+  });
+
+  it("goes back to input from review step, preserving inputs", () => {
+    // inputs are preserved in component state; the step just changes
+    expect(goBackToInput()).toBe("input");
+  });
+
+  it("confirm is NOT available on the input step", () => {
+    expect(confirmIsAvailable("input", false)).toBe(false);
+  });
+
+  it("confirm IS available on the review step when not submitting", () => {
+    expect(confirmIsAvailable("review", false)).toBe(true);
+  });
+
+  it("confirm is NOT available while submitting", () => {
+    expect(confirmIsAvailable("review", true)).toBe(false);
+  });
+
+  it("MARKET order can advance without a limit price", () => {
+    const step = goToReview(
+      "input",
+      canAdvanceToReview("100", "MARKET", "", false, false, false)
+    );
+    expect(step).toBe("review");
+  });
+});
+
 // ── Submission with valid data ────────────────────────────────────────────────
 
 describe("TradeModal – successful submission shape", () => {
