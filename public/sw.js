@@ -9,7 +9,26 @@ self.addEventListener("push", (event) => {
     tag: data.tag ?? "stellarswipe",
     renotify: true,
   };
-  event.waitUntil(self.registration.showNotification(title, options));
+
+  const showPromise = caches.open("notification-preferences")
+    .then((cache) => cache.match("/preferences"))
+    .then((response) => (response ? response.json() : null))
+    .then((prefs) => {
+      if (prefs) {
+        if (prefs.alertsEnabled === false) {
+          return;
+        }
+        if (data.category && prefs[data.category] === false) {
+          return;
+        }
+      }
+      return self.registration.showNotification(title, options);
+    })
+    .catch(() => {
+      return self.registration.showNotification(title, options);
+    });
+
+  event.waitUntil(showPromise);
 });
 
 self.addEventListener("notificationclick", (event) => {

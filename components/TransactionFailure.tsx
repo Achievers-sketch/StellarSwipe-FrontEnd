@@ -16,7 +16,7 @@ interface TransactionFailureProps {
 export function TransactionFailure({ onRetry }: TransactionFailureProps) {
   const { error, showError, clearError, preservedInput, setPreservedInput } =
     useTransactionStore();
-  const { alertsEnabled, toggleAlerts } = useNotificationPreference();
+  const { alertsEnabled, toggleAlerts, categoryPreferences } = useNotificationPreference();
 
   const handleRetry = useCallback(() => {
     const input = preservedInput;
@@ -32,17 +32,18 @@ export function TransactionFailure({ onRetry }: TransactionFailureProps) {
 
   useEffect(() => {
     if (!showError || !error) return;
-    if (alertsEnabled) {
+    if (alertsEnabled && categoryPreferences.systemUpdates) {
       showNotification("Trade Failed", {
         body: error.message || "Something went wrong during the trade execution.",
         icon: "⚠️",
+        category: "systemUpdates",
       });
     }
     analyticsService.track('trade_confirmation_failed', {
       error_message: error.message || 'unknown_error',
       error_code: error.code || undefined,
     });
-  }, [showError, error, alertsEnabled]);
+  }, [showError, error, alertsEnabled, categoryPreferences.systemUpdates]);
 
   if (!error) return null;
 

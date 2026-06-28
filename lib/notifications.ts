@@ -4,13 +4,42 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
   return await Notification.requestPermission();
 }
 
+export type NotificationCategory = 'priceAlerts' | 'newSignals' | 'systemUpdates';
+
 export function canShowNotification(): boolean {
   return 'Notification' in window && Notification.permission === 'granted';
 }
 
-export function showNotification(title: string, options?: NotificationOptions) {
-  if (canShowNotification()) new Notification(title, options);
+export function showNotification(
+  title: string,
+  options?: NotificationOptions & { category?: NotificationCategory }
+) {
+  if (!canShowNotification()) return;
+
+  if (options?.category && typeof window !== 'undefined') {
+    const stored = localStorage.getItem('stellarswipe:notification-categories');
+    if (stored) {
+      try {
+        const prefs = JSON.parse(stored);
+        if (prefs[options.category] === false) {
+          return;
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    const storedAlerts = localStorage.getItem('stellarswipe:notification-alerts-enabled');
+    if (storedAlerts && JSON.parse(storedAlerts) === false) {
+      return;
+    }
+  }
+
+  new Notification(title, options);
 }
+
 
 // Web Push helpers
 
