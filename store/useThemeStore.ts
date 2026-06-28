@@ -7,6 +7,8 @@ type Theme = "dark" | "light";
 
 interface ThemeState {
   theme: Theme;
+  _hasHydrated: boolean;
+  setHasHydrated: (hydrated: boolean) => void;
   setTheme: (theme: Theme) => void;
   toggle: () => void;
 }
@@ -17,23 +19,19 @@ export const useThemeStore = create<ThemeState>()(
       // Default to "dark"; the blocking inline script in layout.tsx overrides
       // this at paint time based on the persisted value or system preference.
       theme: "dark",
-      setTheme: (theme) => {
-        set({ theme });
-        // Keep the <html> class in sync immediately for instant visual feedback
-        const root = document.documentElement;
-        root.classList.remove("light", "dark");
-        root.classList.add(theme);
-      },
-      toggle: () => {
-        const next = get().theme === "dark" ? "light" : "dark";
-        set({ theme: next });
-        const root = document.documentElement;
-        root.classList.remove("light", "dark");
-        root.classList.add(next);
-      },
+      _hasHydrated: false,
+      setHasHydrated: (hydrated) => set({ _hasHydrated: hydrated }),
+      setTheme: (theme) => set({ theme }),
+      toggle: () => set({ theme: get().theme === "dark" ? "light" : "dark" }),
     }),
     {
       name: "stellar-theme",
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );
+
+/** Returns `true` once localStorage has been read and state is stable. */
+export const useThemeHydrated = () => useThemeStore((s) => s._hasHydrated);

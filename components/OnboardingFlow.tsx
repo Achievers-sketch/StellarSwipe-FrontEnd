@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useOnboardingStore } from "@/store/useOnboardingStore";
+import { useOnboardingStore, useOnboardingHydrated } from "@/store/useOnboardingStore";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Wallet, LayoutList, ArrowLeftRight, X } from "lucide-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
@@ -35,15 +35,12 @@ const STEPS: OnboardingStep[] = [
 
 export function OnboardingFlow() {
   const { dismissed, setCompleted, setDismissed } = useOnboardingStore();
+  const isHydrated = useOnboardingHydrated();
   const [step, setStep] = useState(0);
 
-  // Trap focus inside the onboarding dialog and restore it on dismiss
-  const focusTrapRef = useFocusTrap({
-    isActive: !dismissed,
-    initialFocus: 'button[aria-label^="Next"]',
-  });
-
-  if (dismissed) return null;
+  // Don't render until we know the persisted dismissed/completed state.
+  // This prevents flashing the onboarding dialog on returning users.
+  if (!isHydrated || dismissed) return null;
 
   const current = STEPS[step];
   const Icon = current.icon;

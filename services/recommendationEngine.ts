@@ -12,6 +12,62 @@ const RISK_CONFIDENCE_FLOOR: Record<RiskProfile, number> = {
   aggressive: 40,
 };
 
+export interface RecommendationFactor {
+  id: string;
+  label: string;
+  description: string;
+  weight: string;
+}
+
+/**
+ * All factors the engine considers when scoring signals.
+ * Sourced from the same constants used in scoreSignal so the page never drifts.
+ */
+export const RECOMMENDATION_FACTORS: RecommendationFactor[] = [
+  {
+    id: 'base_confidence',
+    label: 'Signal Confidence',
+    description: 'Raw confidence score published by the provider (0–100). This is the starting point for every recommendation score.',
+    weight: 'Base score (0–100)',
+  },
+  {
+    id: 'confidence_floor',
+    label: 'Risk Profile Confidence Floor',
+    description: `Signals below the floor for your risk profile are excluded entirely. Conservative: ${RISK_CONFIDENCE_FLOOR.conservative}%, Moderate: ${RISK_CONFIDENCE_FLOOR.moderate}%, Aggressive: ${RISK_CONFIDENCE_FLOOR.aggressive}%.`,
+    weight: 'Excludes signal if below floor',
+  },
+  {
+    id: 'liked_asset',
+    label: 'Liked Asset Boost',
+    description: 'Applied when you have previously given a thumbs-up to signals for the same trading asset.',
+    weight: '+15 points',
+  },
+  {
+    id: 'disliked_asset',
+    label: 'Disliked Asset Penalty',
+    description: 'Applied when you have previously given a thumbs-down to signals for the same trading asset.',
+    weight: '−20 points',
+  },
+  {
+    id: 'risk_profile_aggressive',
+    label: 'Aggressive Profile Match',
+    description: 'Extra boost for high-confidence signals (≥ 80%) when your risk profile is set to Aggressive.',
+    weight: '+10 points',
+  },
+  {
+    id: 'risk_profile_conservative',
+    label: 'Conservative Profile Match',
+    description: 'Extra boost for high-confidence signals (≥ 80%) when your risk profile is set to Conservative.',
+    weight: '+8 points',
+  },
+  {
+    id: 'seasonal_boost',
+    label: 'Seasonal Adjustment',
+    description: 'Applied during Q4 (Oct–Dec) and Q1 (Jan–Mar), which historically see higher market volatility.',
+    weight: '+5 points',
+  },
+];
+
 const SEASONAL_BOOST = (() => {
   const month = new Date().getMonth();
   // Q4 (Oct-Dec) and Q1 (Jan-Mar) historically higher volatility
@@ -65,6 +121,15 @@ function scoreSignal(
   if (reasons.length === 0) reasons.push('Matches your trading history');
 
   return { score: Math.min(100, Math.max(0, score)), reasons };
+}
+
+/**
+ * Record explicit thumbs-up/down feedback from the user.
+ * Distinct from implicit signals (copy, dismiss) so the engine can weight them differently.
+ */
+export function recordExplicitFeedback(signalId: string, sentiment: 'up' | 'down'): void {
+  const { addFeedback } = useRecommendationStore.getState();
+  addFeedback(signalId, sentiment === 'up', 'explicit');
 }
 
 /** Compute recommendations and persist them to the store */

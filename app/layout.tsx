@@ -6,6 +6,7 @@ import { Navbar } from "@/components/Navbar";
 import { PageTransitionPlaceholder } from "@/components/PageTransitionPlaceholder";
 import { TradeStatusBanner } from "@/components/TradeStatusBanner";
 import { DevPerfOverlay } from "@/components/DevPerfOverlay";
+import { AnalyticsDebugConsole } from "@/components/AnalyticsDebugConsole";
 import { ScrollRestoration } from "@/components/ScrollRestoration";
 import { WebVitalsReporting } from "@/components/WebVitalsReporting";
 
@@ -58,6 +59,7 @@ export default function RootLayout({
           </div>
           <TradeStatusBanner />
           <DevPerfOverlay />
+          <AnalyticsDebugConsole />
         </Providers>
       </body>
     </html>

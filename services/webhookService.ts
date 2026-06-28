@@ -50,7 +50,7 @@ export async function sendTestWebhook(webhookId: string): Promise<WebhookDeliver
   const event = webhook.events[0] ?? 'new_signal';
   const body = JSON.stringify(buildSamplePayload(event));
   const signature = await sign(webhook.secret, body);
-  const delivery = await sendWithRetry(webhook.url, body, signature, webhook.id, 1, 10000, true);
+  const delivery = await sendWithRetry(webhook.url, body, signature, webhook.id, 1, 10000, true, webhook.backoffInterval ?? 1000);
   recordDelivery(webhook.id, delivery);
   return delivery;
 }
@@ -67,7 +67,10 @@ export async function dispatchWebhookEvent(event: WebhookEventType, data: Record
 
     decrementRateLimit(webhook.id);
     const signature = await sign(webhook.secret, body);
-    const delivery = await sendWithRetry(webhook.url, body, signature, webhook.id);
+    const delivery = await sendWithRetry(
+      webhook.url, body, signature, webhook.id,
+      webhook.maxRetries ?? 3, 10000, false, webhook.backoffInterval ?? 1000
+    );
     recordDelivery(webhook.id, delivery);
   }
 }
@@ -79,7 +82,8 @@ async function sendWithRetry(
   webhookId: string,
   attempts = 3,
   timeoutMs = 10000,
-  isTest = false
+  isTest = false,
+  backoffInterval = 1000,
 ): Promise<WebhookDelivery> {
   const deliveryId = `del_${Date.now()}`;
   for (let i = 0; i < attempts; i++) {
@@ -98,7 +102,7 @@ async function sendWithRetry(
       });
       clearTimeout(timeout);
       if (res.ok) {
-        return { id: deliveryId, timestamp: new Date().toISOString(), status: 'success', statusCode: res.status };
+        return { id: deliveryId, timestamp: new Date().toISOString(), status: 'success', statusCode: res.status, attemptNumber: i + 1 };
       }
       if (i === attempts - 1) {
         return {
@@ -107,6 +111,7 @@ async function sendWithRetry(
           status: 'failed',
           statusCode: res.status,
           error: `HTTP ${res.status}: ${res.statusText || 'non-2xx response'}`,
+          attemptNumber: i + 1,
         };
       }
     } catch (err) {
@@ -118,10 +123,11 @@ async function sendWithRetry(
           timestamp: new Date().toISOString(),
           status: 'failed',
           error: error.name === 'AbortError' ? `Request timed out after ${timeoutMs / 1000}s` : `Network error: ${error.message}`,
+          attemptNumber: i + 1,
         };
       }
     }
-    await new Promise((r) => setTimeout(r, 1000 * (i + 1)));
+    await new Promise((r) => setTimeout(r, backoffInterval * (i + 1)));
   }
-  return { id: deliveryId, timestamp: new Date().toISOString(), status: 'failed', error: 'Max retries exceeded' };
+  return { id: deliveryId, timestamp: new Date().toISOString(), status: 'failed', error: 'Max retries exceeded', attemptNumber: attempts };
 }
