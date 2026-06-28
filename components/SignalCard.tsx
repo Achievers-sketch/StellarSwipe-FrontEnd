@@ -30,6 +30,9 @@ import { TradeModal } from "@/components/TradeModal";
 import { SignalConflictNotice, type SignalConflictReason } from "@/components/SignalConflictNotice";
 import { cn } from "@/lib/utils";
 import { MiniChart } from "./chart/MiniChart";
+import { CandlestickChart } from "./chart/CandlestickChart";
+import { useChartStyleStore } from "@/store/useChartStyleStore";
+import { BarChart2, LineChart } from "lucide-react";
 import { PremiumSignalBadge } from "@/components/PremiumSignalBadge";
 import { ProviderRatingBadge } from "@/components/ProviderRatingBadge";
 import { useDemoModeStore } from "@/store/useDemoModeStore";
@@ -125,6 +128,7 @@ export function SignalCard({
   const [actionAnnouncement, setActionAnnouncement] = useState("");
   const shouldReduceMotion = useReducedMotion();
   const { isDemoMode } = useDemoModeStore();
+  const { chartStyle, setChartStyle } = useChartStyleStore();
   const fmt = usePriceFormat();
   const executingRef = useRef(false);
   const shareMenuRef = useRef<HTMLDivElement>(null);
@@ -566,7 +570,20 @@ export function SignalCard({
               ) : (
                 <Minus size={16} className="text-foreground-subtle" />
               )}
-              <MiniChart data={roiHistory.map((p) => p.value)} className="flex-1" />
+              {chartStyle === "candlestick" ? (
+                <CandlestickChart data={roiHistory.map((p) => p.value)} className="flex-1" />
+              ) : (
+                <MiniChart data={roiHistory.map((p) => p.value)} className="flex-1" />
+              )}
+              <button
+                type="button"
+                onClick={() => setChartStyle(chartStyle === "line" ? "candlestick" : "line")}
+                aria-label={`Switch to ${chartStyle === "line" ? "candlestick" : "line"} chart`}
+                aria-pressed={chartStyle === "candlestick"}
+                className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                {chartStyle === "line" ? <BarChart2 size={14} aria-hidden="true" /> : <LineChart size={14} aria-hidden="true" />}
+              </button>
             </div>
 
             {/* ── Issue #102: Expandable detail section with smooth animation ── */}

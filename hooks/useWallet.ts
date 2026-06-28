@@ -31,9 +31,13 @@ export function useWallet() {
   const {
     publicKey,
     isConnected: connected,
+    wallets,
+    activePublicKey,
     setPublicKey,
     setConnected,
     disconnect,
+    setActiveWallet,
+    disconnectAll,
   } = useWalletStore();
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
@@ -114,8 +118,49 @@ export function useWallet() {
     }
   }
 
+  async function connectAnother() {
+    try {
+      setIsConnecting(true);
+      setConnectError(null);
+      const connectedResponse = await isConnected();
+      if (!connectedResponse?.isConnected) {
+        walletToast.notFound();
+        setConnectError("not_found");
+        return;
+      }
+      await requestAccess();
+      const result = await getAddress();
+      const key = typeof result === "string" ? result : result.address;
+      setPublicKey(key);
+      walletToast.connected(key);
+      analyticsService.track("wallet_connected", { wallet_type: "freighter" });
+      window.dispatchEvent(new CustomEvent("wallet-connected", { detail: { publicKey: key } }));
+    } catch (err) {
+      if (isUserRejection(err)) {
+        walletToast.denied();
+      } else {
+        walletToast.connectError();
+        setConnectError("error");
+        console.error(err);
+      }
+    } finally {
+      setIsConnecting(false);
+    }
+  }
+
+  function switchWallet(key: string) {
+    setActiveWallet(key);
+    window.dispatchEvent(new CustomEvent("wallet-connected", { detail: { publicKey: key } }));
+  }
+
   function disconnectWallet() {
     disconnect();
+    walletToast.disconnected();
+    window.dispatchEvent(new CustomEvent("wallet-disconnected"));
+  }
+
+  function disconnectAllWallets() {
+    disconnectAll();
     walletToast.disconnected();
     window.dispatchEvent(new CustomEvent("wallet-disconnected"));
   }
@@ -123,8 +168,13 @@ export function useWallet() {
   return {
     publicKey,
     connected,
+    wallets,
+    activePublicKey,
     connect,
+    connectAnother,
+    switchWallet,
     disconnect: disconnectWallet,
+    disconnectAll: disconnectAllWallets,
     sign,
     isConnecting,
     isSigning,
