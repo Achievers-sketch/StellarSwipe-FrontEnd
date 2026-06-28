@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef } from "react";
-import { Bookmark, SlidersHorizontal, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { Bookmark, Save, SlidersHorizontal, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   FilterDirection,
@@ -33,14 +33,20 @@ export function SignalFeedFilters({
     asset,
     provider,
     bookmarkedOnly,
+    presets,
     setDirection,
     setAsset,
     setProvider,
     setBookmarkedOnly,
+    savePreset,
+    applyPreset,
+    deletePreset,
     reset,
   } = useSignalFilterStore();
   const isHydrated = useSignalFilterHydrated();
   const assetInputRef = useRef<HTMLInputElement>(null);
+  const [presetName, setPresetName] = useState("");
+  const [showPresetInput, setShowPresetInput] = useState(false);
 
   // Render a neutral placeholder until persisted filters are loaded.
   // This prevents filter state from flickering from defaults to saved values.
@@ -239,6 +245,88 @@ export function SignalFeedFilters({
             .join(" · ")}
         </p>
       )}
+
+      {/* Presets */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-medium text-foreground-muted uppercase tracking-wide">
+            Presets
+          </span>
+          <button
+            type="button"
+            onClick={() => setShowPresetInput((v) => !v)}
+            className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 rounded"
+            aria-label="Save current filters as preset"
+          >
+            <Save size={11} />
+            Save current
+          </button>
+        </div>
+
+        {showPresetInput && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const name = presetName.trim();
+              if (!name) return;
+              savePreset(name);
+              setPresetName("");
+              setShowPresetInput(false);
+            }}
+            className="flex gap-2"
+          >
+            <input
+              autoFocus
+              type="text"
+              value={presetName}
+              onChange={(e) => setPresetName(e.target.value)}
+              placeholder="Preset name…"
+              maxLength={40}
+              className="flex-1 rounded-full bg-surface border border-border px-3 py-1 text-xs text-foreground placeholder-foreground-subtle focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="Preset name"
+            />
+            <button
+              type="submit"
+              disabled={!presetName.trim()}
+              className="rounded-full bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-500 disabled:opacity-40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowPresetInput(false)}
+              className="rounded-full px-3 py-1 text-xs text-foreground-muted hover:text-foreground border border-border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              Cancel
+            </button>
+          </form>
+        )}
+
+        {presets.length > 0 && (
+          <ul className="flex flex-wrap gap-2" role="list" aria-label="Saved filter presets">
+            {presets.map((preset) => (
+              <li key={preset.name} className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => applyPreset(preset.name)}
+                  className="rounded-full bg-surface border border-border px-3 py-1 text-xs text-foreground hover:border-blue-500/60 hover:text-blue-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  aria-label={`Apply preset: ${preset.name}`}
+                >
+                  {preset.name}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => deletePreset(preset.name)}
+                  className="rounded-full p-1 text-foreground-muted hover:text-red-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                  aria-label={`Delete preset: ${preset.name}`}
+                >
+                  <Trash2 size={11} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </section>
   );
 }

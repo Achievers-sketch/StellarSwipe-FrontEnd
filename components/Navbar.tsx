@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, Zap } from "lucide-react";
 import { useWallet } from "@/hooks/useWallet";
@@ -9,6 +9,7 @@ import { WalletDropdown } from "@/components/WalletDropdown";
 import { WalletSelectionModal } from "@/components/WalletSelectionModal";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { CommandPalette } from "@/components/CommandPalette";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -19,8 +20,20 @@ const NAV_LINKS = [
 ];
 
 export function Navbar() {
-  const { connected, isConnecting } = useWallet();
+  const { connected, isConnecting, connect } = useWallet();
   const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   return (
     <>
@@ -80,6 +93,15 @@ export function Navbar() {
       <WalletSelectionModal
         open={walletModalOpen}
         onClose={() => setWalletModalOpen(false)}
+      />
+
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onConnectWallet={() => {
+          if (connected) return;
+          setWalletModalOpen(true);
+        }}
       />
     </>
   );
