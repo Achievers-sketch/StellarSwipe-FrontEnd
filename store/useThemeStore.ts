@@ -16,6 +16,8 @@ interface ThemeState {
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
+      // Default to "dark"; the blocking inline script in layout.tsx overrides
+      // this at paint time based on the persisted value or system preference.
       theme: "dark",
       _hasHydrated: false,
       setHasHydrated: (hydrated) => set({ _hasHydrated: hydrated }),

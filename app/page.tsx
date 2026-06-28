@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/useWallet";
@@ -14,14 +14,15 @@ import { PageTransition } from "@/components/PageTransition";
 export default function Home() {
   const { publicKey, connected, connect, disconnect } = useWallet();
   const [tradeOpen, setTradeOpen] = useState(false);
+  const prefersReduced = useReducedMotion();
 
   return (
     <PageTransition>
       <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-4 sm:gap-8 sm:p-8 bg-gray-950">
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          initial={prefersReduced ? { opacity: 0 } : { opacity: 0, y: -20 }}
+          animate={prefersReduced ? { opacity: 1 } : { opacity: 1, y: 0 }}
+          transition={prefersReduced ? { duration: 0.01 } : { duration: 0.5 }}
           className="relative text-center"
         >
           <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl md:text-4xl">
@@ -33,9 +34,9 @@ export default function Home() {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2, duration: 0.4 }}
+          initial={prefersReduced ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
+          animate={prefersReduced ? { opacity: 1 } : { opacity: 1, scale: 1 }}
+          transition={prefersReduced ? { duration: 0.01 } : { delay: 0.2, duration: 0.4 }}
           className="flex flex-col items-center gap-4"
         >
           {connected ? (

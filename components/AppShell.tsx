@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useWallet } from "@/hooks/useWallet";
 import { useTransactionStore } from "@/store/useTransactionStore";
 import { Button } from "@/components/ui/button";
@@ -65,15 +65,17 @@ export function AppShell({ children }: AppShellProps) {
     [assets]
   );
 
+  const prefersReduced = useReducedMotion();
+
   if (!connected) {
     return (
       <PageTransition>
         <OnboardingFlow />
         <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-4 sm:gap-8 sm:p-8 bg-background text-foreground">
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            initial={prefersReduced ? { opacity: 0 } : { opacity: 0, y: -20 }}
+            animate={prefersReduced ? { opacity: 1 } : { opacity: 1, y: 0 }}
+            transition={prefersReduced ? { duration: 0.01 } : { duration: 0.5 }}
             className="relative text-center"
           >
             <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-4xl">
@@ -83,9 +85,9 @@ export function AppShell({ children }: AppShellProps) {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2, duration: 0.4 }}
+            initial={prefersReduced ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
+            animate={prefersReduced ? { opacity: 1 } : { opacity: 1, scale: 1 }}
+            transition={prefersReduced ? { duration: 0.01 } : { delay: 0.2, duration: 0.4 }}
             className="flex flex-col items-center gap-4"
           >
             <Button
@@ -108,7 +110,8 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <PageTransition>
-      <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8 lg:px-8 text-foreground">
+      {/* `div` here because <main id="main-content"> lives in the root layout */}
+      <div className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8 lg:px-8 text-foreground">
         <header className="mx-auto mb-6 flex w-full max-w-7xl items-center justify-between sm:mb-8">
           <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">StellarSwipe</h1>
           <div className="flex items-center gap-3">
@@ -182,7 +185,7 @@ export function AppShell({ children }: AppShellProps) {
           walletBalance={250}
           portfolioBalance={portfolioBalance}
         />
-      </main>
+      </div>
     </PageTransition>
   );
 }
