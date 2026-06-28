@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react'
 import { runBacktest, type BacktestParams, type BacktestResult } from '@/lib/backtest'
-import { Download } from 'lucide-react'
+import { Download, Save, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useBacktestPresetsStore } from '@/store/useBacktestPresetsStore'
 
 function downloadFile(content: string, filename: string, mime: string) {
   const blob = new Blob([content], { type: mime })
@@ -45,6 +46,10 @@ export default function BacktestTool() {
   const [result, setResult] = useState<BacktestResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [presetName, setPresetName] = useState('')
+  const [showSaveInput, setShowSaveInput] = useState(false)
+
+  const { presets, savePreset, deletePreset } = useBacktestPresetsStore()
 
   const params: BacktestParams = { from, to, signals: selected, slippageBps, feeBps }
 
@@ -61,8 +66,53 @@ export default function BacktestTool() {
     }
   }
 
+  function handleSavePreset() {
+    if (!presetName.trim()) return
+    savePreset(presetName.trim(), params)
+    setPresetName('')
+    setShowSaveInput(false)
+  }
+
+  function handleLoadPreset(id: string) {
+    const preset = presets.find((p) => p.id === id)
+    if (!preset) return
+    setFrom(preset.params.from)
+    setTo(preset.params.to)
+    setSelected(preset.params.signals)
+    setSlippageBps(preset.params.slippageBps ?? 10)
+    setFeeBps(preset.params.feeBps ?? 10)
+  }
+
   return (
     <div className="bg-surface border border-border rounded-lg p-4">
+      {/* Presets */}
+      {presets.length > 0 && (
+        <div className="mb-4">
+          <label className="text-xs text-foreground-muted block mb-1">Load Preset</label>
+          <div className="flex flex-wrap gap-2">
+            {presets.map((p) => (
+              <div key={p.id} className="flex items-center gap-1">
+                <button
+                  onClick={() => handleLoadPreset(p.id)}
+                  className="text-xs px-2 py-1 bg-white/10 hover:bg-white/20 rounded transition-colors"
+                  data-testid={`preset-load-${p.id}`}
+                >
+                  {p.name}
+                </button>
+                <button
+                  onClick={() => deletePreset(p.id)}
+                  aria-label={`Delete preset ${p.name}`}
+                  className="text-red-400 hover:text-red-300"
+                  data-testid={`preset-delete-${p.id}`}
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Inputs */}
       <div className="flex flex-wrap gap-4 mb-4">
         <div>
@@ -107,6 +157,46 @@ export default function BacktestTool() {
             className="block w-20"
           />
         </div>
+      </div>
+
+      {/* Save preset row */}
+      <div className="flex items-center gap-2 mb-4">
+        {showSaveInput ? (
+          <>
+            <input
+              type="text"
+              value={presetName}
+              onChange={(e) => setPresetName(e.target.value)}
+              placeholder="Preset name"
+              className="text-sm px-2 py-1 bg-white/10 rounded border border-white/20 focus:outline-none"
+              data-testid="preset-name-input"
+              onKeyDown={(e) => e.key === 'Enter' && handleSavePreset()}
+              autoFocus
+            />
+            <Button
+              size="sm"
+              onClick={handleSavePreset}
+              disabled={!presetName.trim()}
+              data-testid="preset-save-confirm"
+            >
+              Save
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => { setShowSaveInput(false); setPresetName('') }}>
+              Cancel
+            </Button>
+          </>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowSaveInput(true)}
+            className="gap-2"
+            data-testid="preset-save-open"
+          >
+            <Save className="h-3 w-3" />
+            Save as preset
+          </Button>
+        )}
       </div>
 
       {/* Actions */}
