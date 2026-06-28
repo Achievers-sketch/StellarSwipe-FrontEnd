@@ -23,6 +23,7 @@ import {
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/hooks/useI18n";
 import { SignalBadge } from "@/components/SignalBadge";
 import { SignalTimestamp } from "@/components/SignalTimestamp";
 import { TradeSkeleton } from "@/components/TradeSkeleton";
@@ -128,6 +129,7 @@ export function SignalCard({
   const [actionAnnouncement, setActionAnnouncement] = useState("");
   const shouldReduceMotion = useReducedMotion();
   const { isDemoMode } = useDemoModeStore();
+  const { isRTL: rtl } = useI18n();
   const { chartStyle, setChartStyle } = useChartStyleStore();
   const fmt = usePriceFormat();
   const executingRef = useRef(false);
@@ -336,18 +338,22 @@ export function SignalCard({
     const velocityX = info.velocity.x;
     const fastSwipe = Math.abs(velocityX) > VELOCITY_THRESHOLD && Math.abs(offsetX) > 40;
 
-    if (
-      offsetX > SWIPE_THRESHOLD ||
-      (offsetX > SWIPE_THRESHOLD * 0.4 && velocityX > VELOCITY_THRESHOLD) ||
-      (fastSwipe && velocityX > 0)
-    ) {
+    // In RTL, swipe directions are mirrored: right=pass, left=trade
+    const tradeSwipe = rtl ? offsetX < -SWIPE_THRESHOLD : offsetX > SWIPE_THRESHOLD;
+    const tradeVelocity = rtl
+      ? offsetX < -SWIPE_THRESHOLD * 0.4 && velocityX < -VELOCITY_THRESHOLD
+      : offsetX > SWIPE_THRESHOLD * 0.4 && velocityX > VELOCITY_THRESHOLD;
+    const tradeFast = fastSwipe && (rtl ? velocityX < 0 : velocityX > 0);
+
+    const passSwipe = rtl ? offsetX > SWIPE_THRESHOLD : offsetX < -SWIPE_THRESHOLD;
+    const passVelocity = rtl
+      ? offsetX > SWIPE_THRESHOLD * 0.4 && velocityX > VELOCITY_THRESHOLD
+      : offsetX < -SWIPE_THRESHOLD * 0.4 && velocityX < -VELOCITY_THRESHOLD;
+    const passFast = fastSwipe && (rtl ? velocityX > 0 : velocityX < 0);
+
+    if (tradeSwipe || tradeVelocity || tradeFast) {
       handleExecuteTrade();
-    } else if (
-      showPassAction &&
-      (offsetX < -SWIPE_THRESHOLD ||
-        (offsetX < -SWIPE_THRESHOLD * 0.4 && velocityX < -VELOCITY_THRESHOLD) ||
-        (fastSwipe && velocityX < 0))
-    ) {
+    } else if (showPassAction && (passSwipe || passVelocity || passFast)) {
       handlePass();
     }
     setIsDragging(false);
@@ -391,8 +397,8 @@ export function SignalCard({
           />
 
           <motion.div
-            className="pointer-events-none absolute inset-0 z-10 flex items-center justify-start rounded-2xl border-2 border-green-500 bg-green-500/10 pl-6"
-            style={{ opacity: tradeOpacity }}
+            className="pointer-events-none absolute inset-0 z-10 flex items-center justify-start rounded-2xl border-2 border-green-500 bg-green-500/10 ps-6"
+            style={{ opacity: rtl ? passOpacity : tradeOpacity }}
             aria-hidden="true"
           >
             <span className="flex items-center gap-1.5 rounded-lg bg-green-500 px-3 py-1.5 text-sm font-bold text-white shadow">
@@ -402,8 +408,8 @@ export function SignalCard({
 
           {showPassAction && (
             <motion.div
-              className="pointer-events-none absolute inset-0 z-10 flex items-center justify-end rounded-2xl border-2 border-red-500 bg-red-500/10 pr-6"
-              style={{ opacity: passOpacity }}
+              className="pointer-events-none absolute inset-0 z-10 flex items-center justify-end rounded-2xl border-2 border-red-500 bg-red-500/10 pe-6"
+              style={{ opacity: rtl ? tradeOpacity : passOpacity }}
               aria-hidden="true"
             >
               <span className="flex items-center gap-1.5 rounded-lg bg-red-500 px-3 py-1.5 text-sm font-bold text-white shadow">
@@ -496,7 +502,7 @@ export function SignalCard({
                     <Share2 size={16} />
                   </Button>
                   {showShareMenu && (
-                    <div className="share-menu absolute right-0 top-full mt-1 bg-card border rounded-lg shadow-lg z-20 min-w-[150px] p-1">
+                    <div className="share-menu absolute end-0 top-full mt-1 bg-card border rounded-lg shadow-lg z-20 min-w-[150px] p-1">
                       <button
                         onClick={handleCopyLink}
                         className="w-full text-left px-3 py-2 text-sm hover:bg-muted rounded flex items-center gap-2"
@@ -644,7 +650,9 @@ export function SignalCard({
 
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <SignalTimestamp updatedAt={signalTimestamp} />
-              <p className="text-xs text-muted-foreground" aria-hidden="true">← Pass &nbsp;|&nbsp; Enter / → Trade</p>
+              <p className="text-xs text-muted-foreground" aria-hidden="true">
+                {rtl ? "→ تخطي | أدخل / ← تداول" : "← Pass | Enter / → Trade"}
+              </p>
             </div>
 
             <div className="flex gap-2 pt-2">

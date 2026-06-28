@@ -34,6 +34,11 @@ export function useI18n() {
   const changeLocale = async (newLocale: Locale) => {
     await setLocale(newLocale);
     setLocalLocale(newLocale);
+    // Broadcast locale change so Providers (and any other listeners) can sync
+    // document-level dir/lang without requiring a full re-render of layout.
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('locale-changed', { detail: { locale: newLocale } }));
+    }
   };
 
   return {

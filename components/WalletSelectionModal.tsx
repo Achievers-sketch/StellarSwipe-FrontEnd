@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Wallet, Loader2, ExternalLink, CheckCircle2, AlertCircle } from "lucide-react";
+import { X, Wallet, Loader2, ExternalLink, CheckCircle2, AlertCircle, QrCode, ChevronLeft } from "lucide-react";
 import { isConnected } from "@stellar/freighter-api";
 import { useWallet } from "@/hooks/useWallet";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { WalletConnectErrorModal } from "@/components/WalletConnectErrorModal";
+import { QRPairingPanel } from "@/components/QRPairingPanel";
 
 interface WalletSelectionModalProps {
   open: boolean;
@@ -31,10 +32,12 @@ const WALLET_OPTIONS: WalletOption[] = [
 ];
 
 type DetectionState = "idle" | "detecting" | "detected" | "not-found";
+type ModalView = "select" | "qr";
 
 export function WalletSelectionModal({ open, onClose }: WalletSelectionModalProps) {
   const { connect, isConnecting, connectError, clearConnectError } = useWallet();
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
+  const [view, setView] = useState<ModalView>("select");
   const [detection, setDetection] = useState<Record<string, DetectionState>>({
     freighter: "idle",
   });
@@ -75,7 +78,10 @@ export function WalletSelectionModal({ open, onClose }: WalletSelectionModalProp
 
   // Reset selection when modal closes
   useEffect(() => {
-    if (!open) setSelectedWallet(null);
+    if (!open) {
+      setSelectedWallet(null);
+      setView("select");
+    }
   }, [open]);
 
   async function handleSelectWallet(wallet: WalletOption) {
@@ -147,9 +153,20 @@ export function WalletSelectionModal({ open, onClose }: WalletSelectionModalProp
           >
             {/* Header */}
             <div className="flex items-center justify-between mb-2">
-              <h2 id="wallet-modal-title" className="text-lg font-semibold text-foreground">
-                Connect Wallet
-              </h2>
+              <div className="flex items-center gap-2">
+                {view === "qr" && (
+                  <button
+                    onClick={() => setView("select")}
+                    aria-label="Back to wallet selection"
+                    className="rounded-full p-1 text-foreground-muted hover:text-foreground hover:bg-surface-high/40 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                )}
+                <h2 id="wallet-modal-title" className="text-lg font-semibold text-foreground">
+                  {view === "qr" ? "Scan to Connect" : "Connect Wallet"}
+                </h2>
+              </div>
               <button
                 onClick={onClose}
                 aria-label="Close wallet selection modal"
@@ -159,80 +176,110 @@ export function WalletSelectionModal({ open, onClose }: WalletSelectionModalProp
               </button>
             </div>
             <p id="wallet-modal-description" className="text-sm text-foreground-muted mb-5">
-              Choose a wallet to connect to StellarSwipe
+              {view === "qr"
+                ? "Use a mobile wallet app to scan and connect"
+                : "Choose a wallet to connect to StellarSwipe"}
             </p>
 
-            {/* Wallet options */}
-            <div className="space-y-3">
-              {WALLET_OPTIONS.map((wallet) => {
-                const state = detection[wallet.id] ?? "idle";
-                const isSelected = selectedWallet === wallet.id;
-                const loading = isSelected && isConnecting;
-                const notFound = state === "not-found";
+            {/* QR Pairing View */}
+            {view === "qr" ? (
+              <QRPairingPanel
+                onSuccess={onClose}
+                onCancel={() => setView("select")}
+              />
+            ) : (
+              <>
+                {/* Wallet options */}
+                <div className="space-y-3">
+                  {WALLET_OPTIONS.map((wallet) => {
+                    const state = detection[wallet.id] ?? "idle";
+                    const isSelected = selectedWallet === wallet.id;
+                    const loading = isSelected && isConnecting;
+                    const notFound = state === "not-found";
 
-                return (
+                    return (
+                      <button
+                        key={wallet.id}
+                        data-wallet-id={wallet.id}
+                        onClick={() => handleSelectWallet(wallet)}
+                        disabled={isConnecting || state === "detecting"}
+                        aria-describedby={`wallet-${wallet.id}-description`}
+                        className="w-full flex items-start gap-4 rounded-xl border border-border bg-surface p-4 text-left hover:border-blue-500/50 hover:bg-surface-high/50 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {/* Icon */}
+                        <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600/20 border border-blue-500/30">
+                          {loading || state === "detecting" ? (
+                            <Loader2
+                              size={20}
+                              className="text-blue-400 animate-spin"
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <Wallet size={20} className="text-blue-400" aria-hidden="true" />
+                          )}
+                        </div>
+
+                        {/* Text */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold text-foreground">{wallet.name}</p>
+                            <ProviderStatusBadge state={state} />
+                          </div>
+                          <p
+                            id={`wallet-${wallet.id}-description`}
+                            className="mt-0.5 text-xs text-foreground-muted leading-relaxed"
+                          >
+                            {wallet.description}
+                          </p>
+                          {loading && (
+                            <p className="mt-1.5 text-xs text-accent-primary" aria-live="polite">
+                              Connecting…
+                            </p>
+                          )}
+                          {notFound && (
+                            <p className="mt-1.5 text-xs text-accent-warning flex items-center gap-1">
+                              <ExternalLink size={11} />
+                              Click to install
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+
+                  {/* QR Pairing option */}
                   <button
-                    key={wallet.id}
-                    data-wallet-id={wallet.id}
-                    onClick={() => handleSelectWallet(wallet)}
-                    disabled={isConnecting || state === "detecting"}
-                    aria-describedby={`wallet-${wallet.id}-description`}
+                    onClick={() => setView("qr")}
+                    disabled={isConnecting}
+                    aria-label="Connect via QR code pairing"
                     className="w-full flex items-start gap-4 rounded-xl border border-border bg-surface p-4 text-left hover:border-blue-500/50 hover:bg-surface-high/50 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {/* Icon */}
-                    <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600/20 border border-blue-500/30">
-                      {loading || state === "detecting" ? (
-                        <Loader2
-                          size={20}
-                          className="text-blue-400 animate-spin"
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <Wallet size={20} className="text-blue-400" aria-hidden="true" />
-                      )}
+                    <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-600/20 border border-purple-500/30">
+                      <QrCode size={20} className="text-purple-400" aria-hidden="true" />
                     </div>
-
-                    {/* Text */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-foreground">{wallet.name}</p>
-                        <ProviderStatusBadge state={state} />
-                      </div>
-                      <p
-                        id={`wallet-${wallet.id}-description`}
-                        className="mt-0.5 text-xs text-foreground-muted leading-relaxed"
-                      >
-                        {wallet.description}
+                      <p className="text-sm font-semibold text-foreground">Mobile Wallet (QR)</p>
+                      <p className="mt-0.5 text-xs text-foreground-muted leading-relaxed">
+                        Scan a QR code with your mobile wallet app — no browser extension needed.
                       </p>
-                      {loading && (
-                        <p className="mt-1.5 text-xs text-accent-primary" aria-live="polite">
-                          Connecting…
-                        </p>
-                      )}
-                      {notFound && (
-                        <p className="mt-1.5 text-xs text-accent-warning flex items-center gap-1">
-                          <ExternalLink size={11} />
-                          Click to install
-                        </p>
-                      )}
                     </div>
                   </button>
-                );
-              })}
-            </div>
+                </div>
 
-            {/* Footer */}
-            <p className="mt-5 text-center text-xs text-gray-500">
-              Don&apos;t have a wallet?{" "}
-              <a
-                href="https://www.freighter.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent-primary hover:text-accent-primary/80 inline-flex items-center gap-1 underline-offset-2 hover:underline"
-              >
-                Install Freighter <ExternalLink size={11} />
-              </a>
-            </p>
+                {/* Footer */}
+                <p className="mt-5 text-center text-xs text-gray-500">
+                  Don&apos;t have a wallet?{" "}
+                  <a
+                    href="https://www.freighter.app"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent-primary hover:text-accent-primary/80 inline-flex items-center gap-1 underline-offset-2 hover:underline"
+                  >
+                    Install Freighter <ExternalLink size={11} />
+                  </a>
+                </p>
+              </>
+            )}
           </motion.div>
         </motion.div>
       )}

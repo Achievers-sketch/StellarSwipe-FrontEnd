@@ -10,6 +10,7 @@ import { FeeDisclosurePanel } from "@/components/FeeDisclosurePanel";
 import { SlippageWarning } from "@/components/SlippageWarning";
 import { usePriceFormat } from "@/hooks/usePriceFormat";
 import { validateTradeField } from "@/lib/tradeSchemas";
+import { useNetworkMismatch } from "@/components/NetworkMismatchBanner";
 
 type OrderType = "LIMIT" | "MARKET";
 
@@ -56,6 +57,7 @@ export function TradeModal({
   const { isDemoMode } = useDemoModeStore();
   const { enabled: positionLimitEnabled, percentage: positionLimitPercentage } =
     usePositionLimitStore();
+  const { isMismatch: networkMismatch, walletNetwork, appNetwork } = useNetworkMismatch();
   const fmt = usePriceFormat();
 
   // Live-region ref for announcing order-type changes to screen readers
@@ -102,7 +104,8 @@ export function TradeModal({
     exceedsPositionLimit ||
     submitting ||
     hasErrors ||
-    showSlippageWarning;
+    showSlippageWarning ||
+    networkMismatch;
 
   // Reset form state when modal opens
   useEffect(() => {
@@ -461,7 +464,7 @@ export function TradeModal({
                 >
                   <span
                     className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-foreground shadow transition-transform ${
-                      positionLimit ? "translate-x-5" : ""
+                      positionLimit ? "ltr:translate-x-5 rtl:-translate-x-5" : ""
                     }`}
                     aria-hidden="true"
                   />
@@ -519,6 +522,23 @@ export function TradeModal({
               onCancel={onClose}
             />
 
+            {/* Network mismatch — trading blocked */}
+            {networkMismatch && (
+              <div
+                role="alert"
+                className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm flex items-start gap-2"
+              >
+                <AlertCircle className="h-4 w-4 text-amber-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                <div>
+                  <p className="font-medium text-amber-300">Network mismatch</p>
+                  <p className="text-foreground-muted text-xs mt-1">
+                    Wallet is on <strong>{walletNetwork}</strong> but app expects{" "}
+                    <strong>{appNetwork}</strong>. Switch networks in Freighter to enable trading.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Confirm button */}
             <button
               onClick={handleConfirm}
@@ -542,7 +562,9 @@ export function TradeModal({
             </button>
             <span id="confirm-button-help" className="sr-only">
               {disabled
-                ? insufficient
+                ? networkMismatch
+                  ? `Cannot place order: wallet is on ${walletNetwork} but app expects ${appNetwork}`
+                  : insufficient
                   ? "Cannot place order: insufficient balance"
                   : exceedsPositionLimit
                   ? `Cannot place order: exceeds position limit of $${positionLimitInUSD?.toFixed(2)}`

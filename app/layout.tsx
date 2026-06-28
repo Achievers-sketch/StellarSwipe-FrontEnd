@@ -28,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={inter.variable}>
+    <html lang="en" dir="ltr" suppressHydrationWarning className={inter.variable}>
       <head>
         {/*
          * Blocking inline script — runs synchronously before any paint.
