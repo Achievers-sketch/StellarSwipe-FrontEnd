@@ -13,7 +13,7 @@ const AUTO_DISMISS_MS = 8000;
 
 export function TransactionSuccess() {
   const { success, showSuccess, clearSuccess } = useTransactionStore();
-  const { alertsEnabled, toggleAlerts } = useNotificationPreference();
+  const { alertsEnabled, toggleAlerts, categoryPreferences } = useNotificationPreference();
 
   const handleViewPortfolio = useCallback(() => {
     clearSuccess();
@@ -24,10 +24,11 @@ export function TransactionSuccess() {
 
   useEffect(() => {
     if (!showSuccess || !success) return;
-    if (alertsEnabled) {
+    if (alertsEnabled && categoryPreferences.systemUpdates) {
       showNotification("Trade Executed", {
         body: `Your swap for ${success.token} at ${success.price} completed successfully`,
         icon: "✓",
+        category: "systemUpdates",
       });
     }
     analyticsService.track('trade_confirmation_success', {
@@ -35,7 +36,7 @@ export function TransactionSuccess() {
       amount: success.amount,
       price: success.price,
     });
-  }, [showSuccess, success, alertsEnabled]);
+  }, [showSuccess, success, alertsEnabled, categoryPreferences.systemUpdates]);
 
   useEffect(() => {
     if (!showSuccess) return;
