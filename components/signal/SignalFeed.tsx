@@ -21,6 +21,8 @@ import { useSyncStatus } from "@/hooks/useSyncStatus";
 import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
 import { RelativeTimestamp } from "@/components/RelativeTimestamp";
 import { queryOptions as queryOpts } from "@/lib/queryOptions";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { PullToRefreshIndicator } from "@/components/PullToRefreshIndicator";
 
 interface SignalResponse {
   items: Signal[];
@@ -182,6 +184,18 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const syncStatus = useSyncStatus(isFetching);
+
+  // Pull-to-refresh gesture handler
+  const handlePullRefresh = useCallback(() => {
+    // Refetch the first page when pull-to-refresh is triggered
+    refetch();
+  }, [refetch]);
+
+  const { pullDistance, isRefreshing } = usePullToRefresh({
+    container: parentRef.current,
+    onRefresh: handlePullRefresh,
+    disabled: isLoading, // Disable while initial load is in flight
+  });
 
   // Custom scroll restoration for the virtualized container
   useEffect(() => {
@@ -360,6 +374,15 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
         availableMarkets={availableAssets}
       />
 
+      {/* Pull-to-refresh indicator — visible on touch devices only */}
+      <div className="sm:hidden">
+        <PullToRefreshIndicator
+          pullDistance={pullDistance}
+          isRefreshing={isRefreshing}
+          data-testid="pull-to-refresh-container"
+        />
+      </div>
+
       <div
         ref={parentRef}
         className="max-h-[70vh] overflow-auto"
@@ -513,9 +536,9 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
         )}
 
         {/* Sentinel for infinite scroll - positioned at the bottom of the virtualized list */}
-        <div 
-          ref={sentinelRef} 
-          className="h-1 w-full" 
+        <div
+          ref={sentinelRef}
+          className="h-1 w-full"
           aria-hidden="true"
         />
       </div>
