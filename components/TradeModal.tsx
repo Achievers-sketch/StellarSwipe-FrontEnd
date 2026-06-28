@@ -10,6 +10,7 @@ import { FeeDisclosurePanel } from "@/components/FeeDisclosurePanel";
 import { SlippageWarning } from "@/components/SlippageWarning";
 import { usePriceFormat } from "@/hooks/usePriceFormat";
 import { validateTradeField } from "@/lib/tradeSchemas";
+import { useNetworkMismatch } from "@/components/NetworkMismatchBanner";
 
 type ModalStep = "input" | "review";
 
@@ -59,6 +60,7 @@ export function TradeModal({
   const { isDemoMode } = useDemoModeStore();
   const { enabled: positionLimitEnabled, percentage: positionLimitPercentage } =
     usePositionLimitStore();
+  const { isMismatch: networkMismatch, walletNetwork, appNetwork } = useNetworkMismatch();
   const fmt = usePriceFormat();
 
   // Live-region ref for announcing order-type changes to screen readers
@@ -105,7 +107,8 @@ export function TradeModal({
     exceedsPositionLimit ||
     submitting ||
     hasErrors ||
-    showSlippageWarning;
+    showSlippageWarning ||
+    networkMismatch;
 
   // Reset form state when modal opens
   useEffect(() => {

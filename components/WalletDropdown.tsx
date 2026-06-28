@@ -124,7 +124,7 @@ export function WalletDropdown() {
           ref={menuRef}
           role="menu"
           aria-label="Wallet options"
-          className="absolute right-0 mt-2 w-80 rounded-xl border bg-popover shadow-lg p-2 flex flex-col gap-1 z-50"
+          className="absolute end-0 mt-2 w-80 rounded-xl border bg-popover shadow-lg p-2 flex flex-col gap-1 z-50"
         >
           {/* Connected wallets list */}
           {wallets.length > 0 && (

@@ -41,7 +41,7 @@ export function LanguageSelector() {
 
       {showMenu && (
         <div
-          className="absolute right-0 top-full mt-1 bg-card border rounded-lg shadow-lg z-20 min-w-[180px] p-1"
+          className="absolute end-0 top-full mt-1 bg-card border rounded-lg shadow-lg z-20 min-w-[180px] p-1"
           role="listbox"
           aria-label="Select language"
         >
