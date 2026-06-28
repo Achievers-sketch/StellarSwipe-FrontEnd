@@ -6,8 +6,9 @@ import { GripVertical, RotateCcw } from "lucide-react";
 import { PortfolioSummaryCards } from "@/components/PortfolioSummaryCards";
 import { PnLWidget } from "@/components/chart/PnLWidget";
 import { PortfolioAllocationChart } from "@/components/chart/PortfolioAllocationChart";
+import { PortfolioPerformanceBenchmarkChart } from "@/components/chart/PortfolioPerformanceBenchmarkChart";
 
-const DEFAULT_ORDER = ["summary", "pnl", "allocation"];
+const DEFAULT_ORDER = ["summary", "pnl", "allocation", "performance"];
 const STORAGE_KEY = "stellar-swipe-dashboard-layout";
 
 export function DashboardWidgets() {
@@ -58,6 +59,7 @@ export function DashboardWidgets() {
         <PortfolioSummaryCards />
         <PnLWidget />
         <PortfolioAllocationChart />
+        <PortfolioPerformanceBenchmarkChart />
       </div>
     );
   }
@@ -93,9 +95,10 @@ export function DashboardWidgets() {
               totalItems={order.length}
               onMove={moveItem}
             >
-              {widgetId === "summary" && <PortfolioSummaryCards />}
-              {widgetId === "pnl" && <PnLWidget />}
-              {widgetId === "allocation" && <PortfolioAllocationChart />}
+{widgetId === "summary" && <PortfolioSummaryCards />}
+               {widgetId === "pnl" && <PnLWidget />}
+               {widgetId === "allocation" && <PortfolioAllocationChart />}
+               {widgetId === "performance" && <PortfolioPerformanceBenchmarkChart />}
             </WidgetWrapper>
           );
         })}
@@ -130,7 +133,9 @@ function WidgetWrapper({ widgetId, index, totalItems, onMove, children }: Widget
       ? "Portfolio Summary"
       : widgetId === "pnl"
       ? "P&L Overview"
-      : "Portfolio Allocation";
+      : widgetId === "allocation"
+      ? "Portfolio Allocation"
+      : "Performance vs Benchmark";
 
   return (
     <Reorder.Item
