@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import type { InfiniteData } from "@tanstack/query-core";
 import { Button } from "@/components/ui/button";
 import { SignalEmptyState } from "@/components/SignalEmptyState";
@@ -13,11 +14,13 @@ import { PricePrecisionToggle } from "@/components/PricePrecisionToggle";
 import { ExpiredSignalBanner } from "@/components/ExpiredSignalBanner";
 import { useSignalFilterStore } from "@/store/useSignalFilterStore";
 import { useBookmarkStore } from "@/store/useBookmarkStore";
+import { useSnoozeStore, selectVisibleSignals } from "@/store/useSnoozeStore";
 import type { Signal } from "@/lib/signals";
 import { Search, X, SlidersHorizontal } from "lucide-react";
 import { useSyncStatus } from "@/hooks/useSyncStatus";
 import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
 import { RelativeTimestamp } from "@/components/RelativeTimestamp";
+import { queryOptions as queryOpts } from "@/lib/queryOptions";
 
 interface SignalResponse {
   items: Signal[];
@@ -28,8 +31,6 @@ interface SignalResponse {
 }
 
 const PAGE_SIZE = 10;
-// #98: 5-minute stale time so recently-viewed pages are served from cache
-const STALE_TIME = 1000 * 60 * 5;
 
 interface SignalFeedProps {
   /** Server-fetched first page — eliminates the client waterfall on initial load */
@@ -38,6 +39,7 @@ interface SignalFeedProps {
 
 export function SignalFeed({ initialData }: SignalFeedProps = {}) {
   const feedRef = useRef<HTMLDivElement | null>(null);
+  const parentRef = useRef<HTMLDivElement | null>(null);
 
   // #99: provider search state (persisted in filter store)
   const {
@@ -49,8 +51,13 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
     setProvider,
   } = useSignalFilterStore();
   const bookmarkedIds = useBookmarkStore((state) => state.bookmarks);
+  // #321: snoozed signals are hidden from the feed until their snooze elapses.
+  const snoozedMap = useSnoozeStore((state) => state.snoozed);
+  const pruneExpiredSnoozes = useSnoozeStore((state) => state.pruneExpired);
   const [providerSearch, setProviderSearch] = useState(provider);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  // Bumped on a timer so expired snoozes are re-evaluated and signals return.
+  const [snoozeTick, setSnoozeTick] = useState(0);
 
   // Track whether the last auto-load attempt failed so we can show the manual fallback
   const [autoLoadFailed, setAutoLoadFailed] = useState(false);
@@ -76,7 +83,7 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
     },
     getNextPageParam: (lastPage: SignalResponse) => lastPage.nextPage,
     initialPageParam: 1,
-    staleTime: STALE_TIME,
+    staleTime: queryOpts.signal.staleTime,
     placeholderData: (prev) => prev,
     // Seed the cache with the server-fetched first page so no client waterfall occurs
     ...(initialData && {
@@ -133,8 +140,13 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
       filtered = filtered.filter((s) => bookmarkedIds.includes(s.id));
     }
 
+    // #321: hide signals that are currently snoozed; they re-appear once the
+    // snooze expires (snoozeTick forces this to re-run periodically).
+    filtered = selectVisibleSignals(filtered, snoozedMap);
+
     return filtered;
-  }, [allSignals, direction, asset, provider, providerSearch, bookmarkedOnly, bookmarkedIds]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allSignals, direction, asset, provider, providerSearch, bookmarkedOnly, bookmarkedIds, snoozedMap, snoozeTick]);
 
   const signals = useMemo<Signal[]>(() => {
     const copy = [...filteredSignals];
@@ -157,8 +169,67 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
     return copy;
   }, [filteredSignals, sortOrder]);
 
+  // Virtual row configuration - estimate height based on typical signal card
+  const estimatedRowHeight = 280;
+
+  const virtualizer = useVirtualizer({
+    count: signals.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => estimatedRowHeight,
+    overscan: 3,
+    scrollMargin: 100,
+  });
+
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const syncStatus = useSyncStatus(isFetching);
+
+  // Custom scroll restoration for the virtualized container
+  useEffect(() => {
+    const container = parentRef.current;
+    if (!container) return;
+
+    // Restore scroll position from sessionStorage
+    const STORAGE_KEY = "signal-feed-scroll-position";
+    try {
+      const savedPosition = sessionStorage.getItem(STORAGE_KEY);
+      if (savedPosition) {
+        const position = parseInt(savedPosition, 10);
+        container.scrollTop = position;
+      }
+    } catch (e) {
+      // Ignore storage errors
+    }
+
+    // Save scroll position on unmount
+    const handleScroll = () => {
+      try {
+        sessionStorage.setItem(STORAGE_KEY, container.scrollTop.toString());
+      } catch (e) {
+        // Ignore storage errors
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      // Save final position on unmount
+      try {
+        sessionStorage.setItem(STORAGE_KEY, container.scrollTop.toString());
+      } catch (e) {
+        // Ignore storage errors
+      }
+    };
+  }, []);
+
+  // #321: periodically drop expired snoozes so snoozed signals are
+  // automatically returned to the feed once their snooze period elapses.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      pruneExpiredSnoozes();
+      setSnoozeTick((tick) => tick + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [pruneExpiredSnoozes]);
 
   const loadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -290,7 +361,8 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
       />
 
       <div
-        className="space-y-4"
+        ref={parentRef}
+        className="max-h-[70vh] overflow-auto"
         role="feed"
         aria-busy={isLoading}
         aria-label="Signal list"
@@ -339,77 +411,97 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
             ))}
           </div>
         ) : (
-          signals.map((signal) => {
-            const isExpired =
-              !!signal.expiresAt && new Date(signal.expiresAt) < new Date();
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const signal = signals[virtualRow.index];
+              const isExpired =
+                !!signal.expiresAt && new Date(signal.expiresAt) < new Date();
 
-            return (
-              // #101: accessible article with descriptive aria-label
-              <article
-                key={signal.id}
-                tabIndex={0}
-                aria-label={`${signal.ticker} ${signal.action} signal, ${signal.confidence}% confidence${signal.provider ? `, provider ${signal.provider}` : ""}${signal.status ? `, status ${signal.status}` : ""}${isExpired ? ", expired" : ""}. Use arrow keys to navigate between signals.`}
-                className="rounded-3xl border border-white/10 bg-slate-950/90 p-4 shadow-sm shadow-slate-950/20 transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 sm:p-6"
-              >
-                {/* Expired banner — shown above content, clearly visible */}
-                {isExpired && (
-                  <div className="mb-3">
-                    <ExpiredSignalBanner onRefresh={() => refetch()} />
-                  </div>
-                )}
-
+              return (
                 <div
-                  className={isExpired ? "opacity-60 pointer-events-none select-none" : ""}
-                  aria-hidden={isExpired}
+                  key={virtualRow.key}
+                  data-index={virtualRow.index}
+                  ref={virtualizer.measureElement}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
                 >
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.3em] text-foreground-muted">
-                        <time dateTime={signal.timestamp}>
-                          <RelativeTimestamp timestamp={new Date(signal.timestamp)} />
-                        </time>
-                      </p>
-                      <h3 className="mt-2 text-base font-semibold tracking-tight text-white sm:text-xl">
-                        {signal.ticker} • {signal.action}
-                      </h3>
-                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                        {signal.provider && (
-                          <span
-                            className="inline-flex items-center rounded-md bg-sky-500/10 px-2 py-0.5 text-[11px] font-medium text-sky-300 ring-1 ring-inset ring-sky-500/20"
-                            aria-label={`Provider: ${signal.provider}`}
-                          >
-                            {signal.provider}
-                          </span>
-                        )}
-                        {signal.status && (
-                          <span
-                            className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${
-                              signal.status === "Active"
-                                ? "bg-emerald-500/10 text-emerald-300 ring-emerald-500/20"
-                                : signal.status === "Waiting"
-                                ? "bg-amber-500/10 text-amber-300 ring-amber-500/20"
-                                : "bg-slate-500/10 text-slate-400 ring-slate-500/20"
-                            }`}
-                            aria-label={`Status: ${signal.status}`}
-                          >
-                            {signal.status}
-                          </span>
-                        )}
+                  <article
+                    tabIndex={0}
+                    aria-label={`${signal.ticker} ${signal.action} signal, ${signal.confidence}% confidence${signal.provider ? `, provider ${signal.provider}` : ""}${signal.status ? `, status ${signal.status}` : ""}${isExpired ? ", expired" : ""}. Use arrow keys to navigate between signals.`}
+                    className="rounded-3xl border border-white/10 bg-slate-950/90 p-4 shadow-sm shadow-slate-950/20 transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 sm:p-6 mb-4"
+                  >
+                    {/* Expired banner — shown above content, clearly visible */}
+                    {isExpired && (
+                      <div className="mb-3">
+                        <ExpiredSignalBanner onRefresh={() => refetch()} />
                       </div>
-                    </div>
-                    {/* #101: confidence badge with aria-label */}
+                    )}
+
                     <div
-                      className="shrink-0 rounded-full border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-sky-300 sm:px-4 sm:py-2 sm:text-sm"
-                      aria-label={`Confidence: ${signal.confidence} percent`}
+                      className={isExpired ? "opacity-60 pointer-events-none select-none" : ""}
+                      aria-hidden={isExpired}
                     >
-                      Confidence {signal.confidence}%
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.3em] text-foreground-muted">
+                            <time dateTime={signal.timestamp}>
+                              <RelativeTimestamp timestamp={new Date(signal.timestamp)} />
+                            </time>
+                          </p>
+                          <h3 className="mt-2 text-base font-semibold tracking-tight text-white sm:text-xl">
+                            {signal.ticker} • {signal.action}
+                          </h3>
+                          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                            {signal.provider && (
+                              <span
+                                className="inline-flex items-center rounded-md bg-sky-500/10 px-2 py-0.5 text-[11px] font-medium text-sky-300 ring-1 ring-inset ring-sky-500/20"
+                                aria-label={`Provider: ${signal.provider}`}
+                              >
+                                {signal.provider}
+                              </span>
+                            )}
+                            {signal.status && (
+                              <span
+                                className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${
+                                  signal.status === "Active"
+                                    ? "bg-emerald-500/10 text-emerald-300 ring-emerald-500/20"
+                                    : signal.status === "Waiting"
+                                    ? "bg-amber-500/10 text-amber-300 ring-amber-500/20"
+                                    : "bg-slate-500/10 text-slate-400 ring-slate-500/20"
+                                }`}
+                                aria-label={`Status: ${signal.status}`}
+                              >
+                                {signal.status}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {/* #101: confidence badge with aria-label */}
+                        <div
+                          className="shrink-0 rounded-full border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-sky-300 sm:px-4 sm:py-2 sm:text-sm"
+                          aria-label={`Confidence: ${signal.confidence} percent`}
+                        >
+                          Confidence {signal.confidence}%
+                        </div>
+                      </div>
+                      <p className="mt-4 text-sm leading-6 text-foreground-muted">{signal.details}</p>
                     </div>
-                  </div>
-                  <p className="mt-4 text-sm leading-6 text-foreground-muted">{signal.details}</p>
+                  </article>
                 </div>
-              </article>
-            );
-          })
+              );
+            })}
+          </div>
         )}
 
         {/* #192: append a skeleton card while the next page loads so the feed's height
@@ -419,10 +511,16 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
             <SignalCardSkeleton />
           </div>
         )}
+
+        {/* Sentinel for infinite scroll - positioned at the bottom of the virtualized list */}
+        <div 
+          ref={sentinelRef} 
+          className="h-1 w-full" 
+          aria-hidden="true"
+        />
       </div>
 
       <div className="mt-6 flex flex-col items-center gap-4">
-        <div ref={sentinelRef} className="h-1 w-full" aria-hidden="true" />
 
         {isFetchingNextPage && (
           <div

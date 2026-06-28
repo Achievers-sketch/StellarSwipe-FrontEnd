@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Image from "next/image";
 import {
   Shield,
   Smartphone,
@@ -29,6 +30,7 @@ import {
   isValidSixDigitCode,
   isValidPhoneNumber,
   maskPhoneNumber,
+  type BackupCode,
 } from "@/lib/twoFactorUtils";
 
 export type TwoFactorMethod = "app" | "sms";
@@ -331,13 +333,14 @@ export function TwoFactorSetupWizard({
               aria-label="QR code for authenticator app"
             >
               {!qrError ? (
-                <img
+                <Image
                   src={qrUrl}
                   alt="Scan this QR code with your authenticator app"
                   width={180}
                   height={180}
                   className="rounded-md border border-border bg-white p-2"
                   onError={() => setQrError(true)}
+                  unoptimized
                 />
               ) : (
                 <div className="flex h-44 w-44 items-center justify-center rounded-md border border-border bg-card text-center text-xs text-foreground-muted p-3">
@@ -526,28 +529,45 @@ export function TwoFactorSetupWizard({
               >
                 {backupCodes.map((code, i) => (
                   <li
-                    key={code}
-                    className="font-mono text-xs text-foreground flex items-center gap-1.5"
+                    key={code.value}
+                    className={cn(
+                      "font-mono text-xs flex items-center gap-1.5",
+                      code.consumed
+                        ? "line-through text-foreground-subtle"
+                        : "text-foreground"
+                    )}
+                    aria-label={`Code ${i + 1}: ${code.value}${code.consumed ? ", already used" : ""}`}
                   >
                     <span className="text-foreground-subtle w-4 text-right shrink-0">
                       {String(i + 1).padStart(2, "0")}.
                     </span>
-                    {code}
+                    {code.value}
+                    {code.consumed && (
+                      <span className="ml-1 text-[10px] text-foreground-subtle not-italic">(used)</span>
+                    )}
                   </li>
                 ))}
               </ul>
             </div>
 
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleDownloadBackupCodes}
-              className="gap-1.5 w-full"
-              aria-label="Download backup codes as text file"
-            >
-              <Download size={13} aria-hidden="true" />
-              {backupDownloaded ? "Downloaded ✓" : "Download backup codes (.txt)"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleDownloadBackupCodes}
+                className="gap-1.5 flex-1"
+                aria-label="Download backup codes as text file"
+              >
+                <Download size={13} aria-hidden="true" />
+                {backupDownloaded ? "Downloaded ✓" : "Download (.txt)"}
+              </Button>
+              <CopyButton
+                text={backupCodes
+                  .map((c, i) => `${String(i + 1).padStart(2, "0")}. ${c.value}`)
+                  .join("\n")}
+                label="Copy all backup codes"
+              />
+            </div>
 
             <div
               role="note"

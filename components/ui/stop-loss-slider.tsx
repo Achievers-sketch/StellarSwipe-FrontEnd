@@ -32,6 +32,33 @@ export interface StopLossSliderProps {
  * - Displays the corresponding price when entryPrice is provided
  * - ARIA attributes for screen readers
  * - Value persists while the parent keeps it in state
+ *
+ * @example
+ * // Controlled slider with derived stop-loss price
+ * const [stopLoss, setStopLoss] = React.useState(10);
+ *
+ * <StopLossSlider
+ *   value={stopLoss}
+ *   onChange={setStopLoss}
+ *   entryPrice={0.4821}
+ *   assetSymbol="XLM"
+ * />
+ *
+ * @example
+ * // Tighter range (1–25 %), step of 0.5
+ * <StopLossSlider
+ *   value={stopLoss}
+ *   onChange={setStopLoss}
+ *   min={1}
+ *   max={25}
+ *   step={0.5}
+ * />
+ *
+ * @example
+ * // Disabled while a trade is submitting
+ * <StopLossSlider value={stopLoss} onChange={setStopLoss} disabled={isSubmitting} />
+ *
+ * @see {@link https://storybook.stellarswipe.dev/?path=/docs/ui-stoplosslider--docs Storybook — StopLossSlider}
  */
 export function StopLossSlider({
   value,

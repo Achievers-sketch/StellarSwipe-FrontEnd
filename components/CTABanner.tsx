@@ -4,13 +4,15 @@ import { Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/useWallet";
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { fadeInVariants, useScrollViewport } from "@/hooks/useScrollAnimation";
+import { motion, useReducedMotion } from "framer-motion";
+import { fadeInVariants, fadeInVariantsReduced, useScrollViewport } from "@/hooks/useScrollAnimation";
 
 export function CTABanner() {
   const { connected, connect } = useWallet();
   const [loading, setLoading] = useState(false);
   const scrollProps = useScrollViewport();
+  const prefersReduced = useReducedMotion();
+  const variants = prefersReduced ? fadeInVariantsReduced : fadeInVariants;
 
   async function handleConnect() {
     setLoading(true);
@@ -25,7 +27,7 @@ export function CTABanner() {
 
   return (
     <motion.section
-      variants={fadeInVariants}
+      variants={variants}
       {...scrollProps}
       className="w-full rounded-2xl bg-gradient-to-br from-sky-600 via-blue-700 to-indigo-800 p-8 sm:p-12 text-center shadow-xl"
       aria-labelledby="cta-heading"

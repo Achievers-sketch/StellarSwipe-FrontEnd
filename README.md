@@ -39,9 +39,25 @@ Set environment variables (.env.local):
 Run dev server:
   npm run dev
 
+### React Query Devtools
+
+When running locally (`npm run dev`), the [React Query Devtools](https://tanstack.com/query/latest/docs/framework/react/devtools) panel is automatically available — look for the floating TanStack logo in the corner of the app. Use it to inspect the live query cache, stale/fresh status, and refetch behaviour for hooks such as the signal feed (`["signals"]`).
+
+The devtools are mounted only when `NODE_ENV === "development"`; the import is dead-code-eliminated from production builds, so the panel never ships to users and requires no manual toggling.
+
 ## Storybook
 
 Storybook provides an isolated visual catalog for all core UI primitives and components.
+
+### PR Previews
+
+Every pull request that touches `src/components/`, `src/app/`, `stories/`, or `.storybook/` automatically gets a hosted Storybook preview via [Chromatic](https://www.chromatic.com/):
+
+1. Open the pull request on GitHub.
+2. Look for the **📖 Storybook Preview** comment posted (or updated) by the CI bot — it contains the direct link.
+3. Alternatively, scroll to the **Checks** section and click the **Chromatic Visual Regression** check → **Details**.
+
+The preview is hosted by Chromatic and tied to the PR's build — no local setup required. Previews expire naturally when Chromatic's retention policy applies after the PR is merged or closed.
 
 ### Run locally
 

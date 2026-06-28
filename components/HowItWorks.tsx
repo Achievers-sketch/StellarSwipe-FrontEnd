@@ -1,8 +1,8 @@
 "use client";
 
 import { Wallet, Users, Zap } from "lucide-react";
-import { motion } from "framer-motion";
-import { fadeUpVariants, useScrollViewport } from "@/hooks/useScrollAnimation";
+import { motion, useReducedMotion } from "framer-motion";
+import { fadeUpVariants, fadeUpVariantsReduced, useScrollViewport } from "@/hooks/useScrollAnimation";
 
 const steps = [
   {
@@ -24,6 +24,8 @@ const steps = [
 
 export function HowItWorks() {
   const scrollProps = useScrollViewport();
+  const prefersReduced = useReducedMotion();
+  const variants = prefersReduced ? fadeUpVariantsReduced : fadeUpVariants;
   return (
     <section className="w-full py-16 px-6" aria-labelledby="how-heading">
       <div className="mx-auto max-w-4xl text-center mb-12">
@@ -47,7 +49,7 @@ export function HowItWorks() {
               <motion.div
                 key={step.title}
                 custom={i}
-                variants={fadeUpVariants}
+                variants={variants}
                 {...scrollProps}
                 className="flex flex-col items-center text-center gap-4"
               >

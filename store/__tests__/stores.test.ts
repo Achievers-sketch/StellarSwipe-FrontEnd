@@ -1,9 +1,15 @@
 import { useWalletStore } from "@/store/useWalletStore";
+import { useBookmarkStore } from "@/store/useBookmarkStore";
 import { useSignalStore, type Signal } from "@/store/useSignalStore";
 import {
   useTransactionStore,
   type TransactionHistoryItem,
 } from "@/store/useTransactionStore";
+import { useDemoModeStore } from "@/store/useDemoModeStore";
+import { useOnboardingStore } from "@/store/useOnboardingStore";
+import { usePositionLimitStore } from "@/store/usePositionLimitStore";
+import { useSignalFilterStore } from "@/store/useSignalFilterStore";
+import { useThemeStore } from "@/store/useThemeStore";
 
 // ── useWalletStore ────────────────────────────────────────────────────────────
 
@@ -93,6 +99,47 @@ describe("useSignalStore", () => {
     useSignalStore.getState().setQueue(SAMPLE_SIGNALS);
     useSignalStore.getState().setQueue([]);
     expect(useSignalStore.getState().queue).toHaveLength(0);
+  });
+});
+
+// ── useBookmarkStore ─────────────────────────────────────────────────────────
+
+describe("useBookmarkStore", () => {
+  beforeEach(() => {
+    useBookmarkStore.setState({
+      bookmarks: [],
+      hasBookmark: (id: string) => useBookmarkStore.getState().bookmarks.includes(id),
+      addBookmark: useBookmarkStore.getState().addBookmark,
+      removeBookmark: useBookmarkStore.getState().removeBookmark,
+      toggleBookmark: useBookmarkStore.getState().toggleBookmark,
+      setBookmarks: useBookmarkStore.getState().setBookmarks,
+      clearBookmarks: useBookmarkStore.getState().clearBookmarks,
+    });
+  });
+
+  it("adds and removes bookmarks", () => {
+    useBookmarkStore.getState().addBookmark("signal-1");
+    expect(useBookmarkStore.getState().bookmarks).toEqual(["signal-1"]);
+    useBookmarkStore.getState().removeBookmark("signal-1");
+    expect(useBookmarkStore.getState().bookmarks).toEqual([]);
+  });
+
+  it("toggleBookmark flips membership", () => {
+    useBookmarkStore.getState().toggleBookmark("signal-2");
+    expect(useBookmarkStore.getState().bookmarks).toEqual(["signal-2"]);
+    useBookmarkStore.getState().toggleBookmark("signal-2");
+    expect(useBookmarkStore.getState().bookmarks).toEqual([]);
+  });
+
+  it("setBookmarks deduplicates ids", () => {
+    useBookmarkStore.getState().setBookmarks(["signal-3", "signal-3", "signal-4"]);
+    expect(useBookmarkStore.getState().bookmarks).toEqual(["signal-3", "signal-4"]);
+  });
+
+  it("hasBookmark reflects current state", () => {
+    useBookmarkStore.getState().addBookmark("signal-5");
+    expect(useBookmarkStore.getState().hasBookmark("signal-5")).toBe(true);
+    expect(useBookmarkStore.getState().hasBookmark("signal-x")).toBe(false);
   });
 });
 
@@ -203,5 +250,37 @@ describe("useTransactionStore", () => {
     expect(useTransactionStore.getState().preservedInput).toEqual({ amount: "42", type: "LIMIT" });
     useTransactionStore.getState().setPreservedInput(null);
     expect(useTransactionStore.getState().preservedInput).toBeNull();
+  });
+});
+
+// ── Rehydration guard — _hasHydrated flag ────────────────────────────────────
+
+describe("Rehydration guard – _hasHydrated flag", () => {
+  const stores = [
+    { name: "useBookmarkStore", store: useBookmarkStore },
+    { name: "useDemoModeStore", store: useDemoModeStore },
+    { name: "useOnboardingStore", store: useOnboardingStore },
+    { name: "usePositionLimitStore", store: usePositionLimitStore },
+    { name: "useSignalFilterStore", store: useSignalFilterStore },
+    { name: "useThemeStore", store: useThemeStore },
+  ] as const;
+
+  stores.forEach(({ name, store }) => {
+    it(`${name}: _hasHydrated starts false`, () => {
+      (store as any).setState({ _hasHydrated: false });
+      expect((store.getState() as any)._hasHydrated).toBe(false);
+    });
+
+    it(`${name}: setHasHydrated(true) sets _hasHydrated to true`, () => {
+      (store as any).setState({ _hasHydrated: false });
+      (store.getState() as any).setHasHydrated(true);
+      expect((store.getState() as any)._hasHydrated).toBe(true);
+    });
+
+    it(`${name}: setHasHydrated(false) resets _hasHydrated`, () => {
+      (store as any).setState({ _hasHydrated: true });
+      (store.getState() as any).setHasHydrated(false);
+      expect((store.getState() as any)._hasHydrated).toBe(false);
+    });
   });
 });

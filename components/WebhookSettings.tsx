@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useWebhookStore, type WebhookEventType } from "@/store/useWebhookStore";
-import { buildSamplePayload, dispatchWebhookEvent } from "@/services/webhookService";
+import { sendTestWebhook } from "@/services/webhookService";
 import { Button } from "@/components/ui/button";
 import { Trash2, Plus, Send, Copy } from "lucide-react";
 
@@ -13,10 +13,10 @@ const EVENT_OPTIONS: { value: WebhookEventType; label: string }[] = [
 ];
 
 export function WebhookSettings() {
-  const { webhooks, addWebhook, removeWebhook, updateEvents } = useWebhookStore();
+  const { webhooks, addWebhook, removeWebhook, updateEvents, updateRetryConfig } = useWebhookStore();
   const [url, setUrl] = useState("");
   const [selectedEvents, setSelectedEvents] = useState<WebhookEventType[]>(["new_signal"]);
-  const [testStatus, setTestStatus] = useState<Record<string, string>>({});
+  const [testStatus, setTestStatus] = useState<Record<string, { state: "sending" | "success" | "failed"; message: string }>>({});
   const [copied, setCopied] = useState<string | null>(null);
 
   const handleAdd = () => {
@@ -26,10 +26,28 @@ export function WebhookSettings() {
   };
 
   const handleTest = async (webhookId: string) => {
-    setTestStatus((s) => ({ ...s, [webhookId]: "Sending…" }));
-    await dispatchWebhookEvent("new_signal", buildSamplePayload("new_signal").data);
-    setTestStatus((s) => ({ ...s, [webhookId]: "Sent ✓" }));
-    setTimeout(() => setTestStatus((s) => ({ ...s, [webhookId]: "" })), 3000);
+    setTestStatus((s) => ({
+      ...s,
+      [webhookId]: { state: "sending", message: "Sending test webhook..." },
+    }));
+    try {
+      const delivery = await sendTestWebhook(webhookId);
+      setTestStatus((s) => ({
+        ...s,
+        [webhookId]:
+          delivery.status === "success"
+            ? { state: "success", message: `Test delivered successfully (${delivery.statusCode})` }
+            : { state: "failed", message: delivery.error ?? "Test delivery failed" },
+      }));
+    } catch (error) {
+      setTestStatus((s) => ({
+        ...s,
+        [webhookId]: {
+          state: "failed",
+          message: error instanceof Error ? error.message : "Test delivery failed",
+        },
+      }));
+    }
   };
 
   const copySecret = (secret: string, id: string) => {
@@ -79,23 +97,33 @@ export function WebhookSettings() {
 
       {/* Webhook list */}
       {webhooks.length === 0 && (
-        <p className="text-sm text-muted-foreground text-center py-6">No webhooks configured.</p>
+        <div className="rounded-lg border border-dashed bg-card p-4 text-center">
+          <p className="text-sm text-muted-foreground">No webhooks configured.</p>
+          <Button size="sm" variant="outline" className="mt-3 gap-1" disabled aria-describedby="webhook-test-disabled">
+            <Send size={12} />
+            Send test webhook
+          </Button>
+          <p id="webhook-test-disabled" className="mt-2 text-xs text-muted-foreground">
+            Add a webhook URL before sending a test payload.
+          </p>
+        </div>
       )}
 
       {webhooks.map((wh) => (
         <div key={wh.id} className="rounded-lg border bg-card p-4 space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-mono truncate max-w-xs">{wh.url}</span>
+            <span className="text-sm font-mono truncate max-w-xs" title={wh.url}>{wh.url}</span>
             <div className="flex items-center gap-1 shrink-0">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => handleTest(wh.id)}
-                aria-label="Test webhook"
+                disabled={!wh.url || testStatus[wh.id]?.state === "sending"}
+                aria-label={`Send test webhook to ${wh.url}`}
                 className="gap-1 text-xs"
               >
                 <Send size={12} />
-                {testStatus[wh.id] || "Test"}
+                {testStatus[wh.id]?.state === "sending" ? "Sending..." : "Send test webhook"}
               </Button>
               <Button
                 variant="ghost"
@@ -108,6 +136,21 @@ export function WebhookSettings() {
               </Button>
             </div>
           </div>
+
+          {testStatus[wh.id] && (
+            <p
+              role={testStatus[wh.id].state === "failed" ? "alert" : "status"}
+              className={`rounded-md px-3 py-2 text-xs ${
+                testStatus[wh.id].state === "success"
+                  ? "bg-green-500/10 text-green-600"
+                  : testStatus[wh.id].state === "failed"
+                  ? "bg-red-500/10 text-red-500"
+                  : "bg-blue-500/10 text-blue-600"
+              }`}
+            >
+              {testStatus[wh.id].message}
+            </p>
+          )}
 
           {/* Events */}
           <div className="flex flex-wrap gap-2">
@@ -148,6 +191,36 @@ export function WebhookSettings() {
             Rate limit: <span className={wh.rateLimit < 10 ? "text-yellow-500 font-medium" : ""}>{wh.rateLimit}/60</span> remaining this minute
           </div>
 
+          {/* Retry configuration */}
+          <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground border-t pt-3">
+            <span className="font-medium text-foreground">Retry config:</span>
+            <label className="flex items-center gap-1">
+              Max retries:
+              <input
+                type="number"
+                min={0}
+                max={10}
+                value={wh.maxRetries}
+                onChange={(e) => updateRetryConfig(wh.id, Number(e.target.value), wh.backoffInterval)}
+                className="ml-1 w-14 rounded border bg-background px-2 py-0.5 text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                aria-label={`Max retries for ${wh.url}`}
+              />
+            </label>
+            <label className="flex items-center gap-1">
+              Backoff (ms):
+              <input
+                type="number"
+                min={100}
+                max={60000}
+                step={100}
+                value={wh.backoffInterval}
+                onChange={(e) => updateRetryConfig(wh.id, wh.maxRetries, Number(e.target.value))}
+                className="ml-1 w-20 rounded border bg-background px-2 py-0.5 text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                aria-label={`Backoff interval for ${wh.url}`}
+              />
+            </label>
+          </div>
+
           {/* Delivery history */}
           {wh.deliveries.length > 0 && (
             <details className="text-xs">
@@ -161,6 +234,34 @@ export function WebhookSettings() {
                     <span>{d.status === "success" ? `✓ ${d.statusCode}` : `✗ ${d.error}`}</span>
                   </div>
                 ))}
+              </div>
+            </details>
+          )}
+
+          {/* Failure history */}
+          {wh.deliveries.filter((d) => d.status === "failed").length > 0 && (
+            <details className="text-xs">
+              <summary className="cursor-pointer text-red-500 hover:text-red-600">
+                Failure history ({wh.deliveries.filter((d) => d.status === "failed").length})
+              </summary>
+              <div className="mt-2 space-y-1 max-h-48 overflow-y-auto" role="log" aria-label="Webhook failure history">
+                {wh.deliveries
+                  .filter((d) => d.status === "failed")
+                  .map((d) => (
+                    <div
+                      key={d.id}
+                      className="grid grid-cols-3 gap-2 px-2 py-1.5 rounded bg-red-500/10 text-red-500"
+                    >
+                      <span title={d.timestamp}>{new Date(d.timestamp).toLocaleTimeString()}</span>
+                      <span>Status: {d.statusCode ?? "N/A"}</span>
+                      <span>Attempt #{d.attemptNumber ?? "?"}</span>
+                      {d.error && (
+                        <span className="col-span-3 truncate text-red-400" title={d.error}>
+                          {d.error}
+                        </span>
+                      )}
+                    </div>
+                  ))}
               </div>
             </details>
           )}

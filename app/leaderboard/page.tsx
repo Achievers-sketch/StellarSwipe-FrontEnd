@@ -2,17 +2,33 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useLeaderboard } from "@/hooks/useLeaderboard";
+import { useLeaderboard, type LeaderboardTimeRange } from "@/hooks/useLeaderboard";
 import { SignalProvider } from "@/lib/types";
 import { Loader2, ChevronUp, ChevronDown } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
+import { LeaderboardErrorBoundary } from "@/components/LeaderboardErrorBoundary";
 
 type SortField = "rank" | "overallScore" | "winRate" | "recentPerformance";
 type SortDirection = "asc" | "desc";
 
+const TIME_RANGE_TABS: { value: LeaderboardTimeRange; label: string }[] = [
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "all-time", label: "All Time" },
+];
+
 export default function LeaderboardPage() {
+  return (
+    <LeaderboardErrorBoundary>
+      <LeaderboardPageInner />
+    </LeaderboardErrorBoundary>
+  );
+}
+
+function LeaderboardPageInner() {
   const router = useRouter();
-  const { data: providers, isLoading, error } = useLeaderboard();
+  const { data: providers, isLoading, error, timeRange, setTimeRange } = useLeaderboard();
   const [sortField, setSortField] = useState<SortField>("rank");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
@@ -95,6 +111,28 @@ export default function LeaderboardPage() {
           <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Leaderboard</h1>
           <p className="text-sm text-gray-400 mt-2">Top-performing signal providers</p>
         </header>
+
+        <div
+          className="flex gap-1 border-b border-border"
+          role="tablist"
+          aria-label="Leaderboard time range"
+        >
+          {TIME_RANGE_TABS.map((tab) => (
+            <button
+              key={tab.value}
+              role="tab"
+              aria-selected={timeRange === tab.value}
+              onClick={() => setTimeRange(tab.value)}
+              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                timeRange === tab.value
+                  ? "border-blue-500 text-blue-400"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
         <div className="w-full overflow-x-auto rounded-lg border bg-card">
           <table className="w-full text-sm">

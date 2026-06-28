@@ -9,6 +9,7 @@ import { usePositionLimitStore } from "@/store/usePositionLimitStore";
 import { FeeDisclosurePanel } from "@/components/FeeDisclosurePanel";
 import { SlippageWarning } from "@/components/SlippageWarning";
 import { usePriceFormat } from "@/hooks/usePriceFormat";
+import { validateTradeField } from "@/lib/tradeSchemas";
 
 type OrderType = "LIMIT" | "MARKET";
 
@@ -34,14 +35,6 @@ const mockBuildTx = (order: object) =>
       res();
     }, 800)
   );
-
-function validateField(value: string, label: string): string {
-  if (!value.trim()) return `${label} is required`;
-  const num = Number(value);
-  if (isNaN(num)) return `${label} must be a number`;
-  if (num <= 0) return `${label} must be greater than 0`;
-  return "";
-}
 
 export function TradeModal({
   open,
@@ -75,8 +68,8 @@ export function TradeModal({
   }, [positionLimitEnabled, portfolioBalance, positionLimitPercentage]);
 
   const limitPriceError =
-    type === "LIMIT" && touched.limitPrice ? validateField(limitPrice, "Limit price") : "";
-  const amountError = touched.amount ? validateField(amount, "Amount") : "";
+    type === "LIMIT" && touched.limitPrice ? validateTradeField(limitPrice, "Limit price") : "";
+  const amountError = touched.amount ? validateTradeField(amount, "Amount") : "";
 
   const focusTrapRef = useFocusTrap({
     isActive: open,

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useOnboardingStore } from "@/store/useOnboardingStore";
+import { useOnboardingStore, useOnboardingHydrated } from "@/store/useOnboardingStore";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Wallet, LayoutList, ArrowLeftRight, X } from "lucide-react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 interface OnboardingStep {
   icon: React.ElementType;
@@ -34,9 +35,12 @@ const STEPS: OnboardingStep[] = [
 
 export function OnboardingFlow() {
   const { dismissed, setCompleted, setDismissed } = useOnboardingStore();
+  const isHydrated = useOnboardingHydrated();
   const [step, setStep] = useState(0);
 
-  if (dismissed) return null;
+  // Don't render until we know the persisted dismissed/completed state.
+  // This prevents flashing the onboarding dialog on returning users.
+  if (!isHydrated || dismissed) return null;
 
   const current = STEPS[step];
   const Icon = current.icon;
@@ -57,7 +61,7 @@ export function OnboardingFlow() {
       aria-label="Welcome to StellarSwipe"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
     >
-      <div className="relative w-full max-w-sm rounded-3xl border border-white/10 bg-slate-950 p-6 shadow-2xl shadow-black/50">
+      <div ref={focusTrapRef} className="relative w-full max-w-sm rounded-3xl border border-white/10 bg-slate-950 p-6 shadow-2xl shadow-black/50">
         {/* Skip button */}
         <button
           type="button"

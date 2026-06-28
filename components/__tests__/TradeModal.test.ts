@@ -1,73 +1,132 @@
 /**
- * Unit tests for TradeModal validation logic (components/TradeModal.tsx).
+ * Unit tests for trade form validation (lib/tradeSchemas.ts).
  *
- * The root TradeModal supports LIMIT and MARKET order types with inline
- * validation via validateField(). Tests here cover required-field checks,
- * numeric range checks, and the order-type toggle's effect on which fields
- * are required.
+ * validateTradeField is a Zod-backed drop-in replacement for the legacy
+ * validateField function. Tests verify identical error message contract.
  */
 
-// ── Validation logic (mirrors components/TradeModal.tsx validateField) ────────
+import { validateTradeField, tradeOrderSchema, limitOrderSchema, marketOrderSchema } from "@/lib/tradeSchemas";
 
-function validateField(value: string, label: string): string {
-  if (!value.trim()) return `${label} is required`;
-  const num = Number(value);
-  if (isNaN(num)) return `${label} must be a number`;
-  if (num <= 0) return `${label} must be greater than 0`;
-  return "";
-}
+// ── validateTradeField – required check ──────────────────────────────────────
 
-describe("validateField – required check", () => {
+describe("validateTradeField – required check", () => {
   it("returns an error for an empty string", () => {
-    expect(validateField("", "Amount")).toBe("Amount is required");
+    expect(validateTradeField("", "Amount")).toBe("Amount is required");
   });
 
   it("returns an error for a whitespace-only string", () => {
-    expect(validateField("   ", "Amount")).toBe("Amount is required");
+    expect(validateTradeField("   ", "Amount")).toBe("Amount is required");
   });
 
   it("includes the field label in the error message", () => {
-    expect(validateField("", "Limit price")).toContain("Limit price");
+    expect(validateTradeField("", "Limit price")).toContain("Limit price");
   });
 });
 
-describe("validateField – non-numeric input", () => {
+// ── validateTradeField – non-numeric input ───────────────────────────────────
+
+describe("validateTradeField – non-numeric input", () => {
   it("rejects alphabetic input", () => {
-    expect(validateField("abc", "Amount")).toBe("Amount must be a number");
+    expect(validateTradeField("abc", "Amount")).toBe("Amount must be a number");
   });
 
   it("rejects mixed alphanumeric input", () => {
-    expect(validateField("10xyz", "Amount")).toBe("Amount must be a number");
+    expect(validateTradeField("10xyz", "Amount")).toBe("Amount must be a number");
   });
 
   it("rejects special characters", () => {
-    expect(validateField("$100", "Amount")).toBe("Amount must be a number");
+    expect(validateTradeField("$100", "Amount")).toBe("Amount must be a number");
   });
 });
 
-describe("validateField – numeric range checks", () => {
+// ── validateTradeField – numeric range checks ────────────────────────────────
+
+describe("validateTradeField – numeric range checks", () => {
   it("rejects zero", () => {
-    expect(validateField("0", "Amount")).toBe("Amount must be greater than 0");
+    expect(validateTradeField("0", "Amount")).toBe("Amount must be greater than 0");
   });
 
   it("rejects negative numbers", () => {
-    expect(validateField("-5", "Amount")).toBe("Amount must be greater than 0");
+    expect(validateTradeField("-5", "Amount")).toBe("Amount must be greater than 0");
   });
 
   it("rejects negative decimal", () => {
-    expect(validateField("-0.001", "Limit price")).toBe("Limit price must be greater than 0");
+    expect(validateTradeField("-0.001", "Limit price")).toBe("Limit price must be greater than 0");
   });
 
   it("accepts a positive integer", () => {
-    expect(validateField("100", "Amount")).toBe("");
+    expect(validateTradeField("100", "Amount")).toBe("");
   });
 
   it("accepts a positive decimal", () => {
-    expect(validateField("0.4821", "Limit price")).toBe("");
+    expect(validateTradeField("0.4821", "Limit price")).toBe("");
   });
 
   it("accepts a very small positive value", () => {
-    expect(validateField("0.000001", "Amount")).toBe("");
+    expect(validateTradeField("0.000001", "Amount")).toBe("");
+  });
+});
+
+// ── Zod schemas – LIMIT order ────────────────────────────────────────────────
+
+describe("limitOrderSchema", () => {
+  it("accepts valid LIMIT order", () => {
+    const result = limitOrderSchema.safeParse({
+      orderType: "LIMIT",
+      amount: "50",
+      limitPrice: "0.4821",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("fails when limitPrice is missing", () => {
+    const result = limitOrderSchema.safeParse({ orderType: "LIMIT", amount: "50", limitPrice: "" });
+    expect(result.success).toBe(false);
+  });
+
+  it("fails when amount is zero", () => {
+    const result = limitOrderSchema.safeParse({ orderType: "LIMIT", amount: "0", limitPrice: "0.4821" });
+    expect(result.success).toBe(false);
+  });
+});
+
+// ── Zod schemas – MARKET order ───────────────────────────────────────────────
+
+describe("marketOrderSchema", () => {
+  it("accepts valid MARKET order", () => {
+    const result = marketOrderSchema.safeParse({ orderType: "MARKET", amount: "100" });
+    expect(result.success).toBe(true);
+  });
+
+  it("does not require limitPrice", () => {
+    const result = marketOrderSchema.safeParse({ orderType: "MARKET", amount: "1" });
+    expect(result.success).toBe(true);
+  });
+
+  it("fails when amount is empty", () => {
+    const result = marketOrderSchema.safeParse({ orderType: "MARKET", amount: "" });
+    expect(result.success).toBe(false);
+  });
+});
+
+// ── Zod schemas – discriminated union ────────────────────────────────────────
+
+describe("tradeOrderSchema – discriminated union", () => {
+  it("correctly parses a LIMIT order", () => {
+    const result = tradeOrderSchema.safeParse({ orderType: "LIMIT", amount: "50", limitPrice: "0.5" });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.orderType).toBe("LIMIT");
+  });
+
+  it("correctly parses a MARKET order", () => {
+    const result = tradeOrderSchema.safeParse({ orderType: "MARKET", amount: "100" });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.orderType).toBe("MARKET");
+  });
+
+  it("fails on unknown order type", () => {
+    const result = tradeOrderSchema.safeParse({ orderType: "FOO", amount: "100" });
+    expect(result.success).toBe(false);
   });
 });
 
@@ -140,7 +199,7 @@ function getLimitPriceError(
   limitPrice: string,
   touched: boolean
 ): string {
-  return type === "LIMIT" && touched ? validateField(limitPrice, "Limit price") : "";
+  return type === "LIMIT" && touched ? validateTradeField(limitPrice, "Limit price") : "";
 }
 
 describe("TradeModal – order-type toggle affects required fields", () => {
