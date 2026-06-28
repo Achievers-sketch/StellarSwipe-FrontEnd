@@ -158,7 +158,7 @@ export function AppShell({ children }: AppShellProps) {
                     </button>
                   </div>
                 </div>
-              </div>
+              </PortfolioErrorBoundary>
 
               <div className="w-full max-w-md">
                 <PositionStopLossControl />
