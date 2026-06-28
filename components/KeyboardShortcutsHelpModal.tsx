@@ -83,7 +83,7 @@ export function KeyboardShortcutsHelpModal({ open, onClose }: KeyboardShortcutsH
                   Keyboard shortcuts
                 </h2>
                 <p id="keyboard-shortcuts-description" className="mt-2 text-sm leading-6 text-foreground-muted">
-                  A quick reference for the app's current keyboard controls.
+                  A quick reference for the app&apos;s current keyboard controls.
                 </p>
               </div>
               <Button

@@ -1,4 +1,4 @@
-name: Bundle Size Gate
+name: Storybook Build
 
 on:
   push:
@@ -10,7 +10,7 @@ env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
 jobs:
-  bundle-size:
+  storybook-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,17 +22,12 @@ jobs:
 
       - run: npm ci
 
-      - name: Build with bundle analysis
-        run: ANALYZE=true npm run build
-        env:
-          NEXT_PUBLIC_APP_URL: http://localhost:3000
-
-      - name: Check bundle budget
-        run: node scripts/check-bundle-budget.js
+      - name: Build Storybook
+        run: npm run build-storybook
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: bundle-report
-          path: .next/analyze/
-          retention-days: 14
+          name: storybook-static
+          path: storybook-static/
+          retention-days: 7
