@@ -35,6 +35,11 @@ export function useBookmarkActions() {
   const removeBookmark = useBookmarkStore((state) => state.removeBookmark);
   const toggleBookmark = useBookmarkStore((state) => state.toggleBookmark);
   const hasBookmark = useBookmarkStore((state) => state.hasBookmark);
+  const createFolder = useBookmarkStore((state) => state.createFolder);
+  const renameFolder = useBookmarkStore((state) => state.renameFolder);
+  const deleteFolder = useBookmarkStore((state) => state.deleteFolder);
+  const assignSignalToFolder = useBookmarkStore((state) => state.assignSignalToFolder);
+  const removeSignalFromFolder = useBookmarkStore((state) => state.removeSignalFromFolder);
 
   const bookmark = useCallback(
     (id: string) => {
@@ -72,11 +77,72 @@ export function useBookmarkActions() {
     [bookmark, hasBookmark, unbookmark]
   );
 
+  const handleCreateFolder = useCallback(
+    (name: string) => {
+      const id = createFolder(name);
+      toast.success("Folder created", {
+        description: `"${name}" folder created.`,
+        duration: 2500,
+      });
+      return id;
+    },
+    [createFolder]
+  );
+
+  const handleRenameFolder = useCallback(
+    (folderId: string, name: string) => {
+      renameFolder(folderId, name);
+      toast.success("Folder renamed", {
+        description: `Renamed to "${name}".`,
+        duration: 2500,
+      });
+    },
+    [renameFolder]
+  );
+
+  const handleDeleteFolder = useCallback(
+    (folderId: string, folderName: string) => {
+      deleteFolder(folderId);
+      toast.info("Folder deleted", {
+        description: `"${folderName}" and its assignments were removed.`,
+        duration: 3500,
+      });
+    },
+    [deleteFolder]
+  );
+
+  const handleAssignToFolder = useCallback(
+    (signalId: string, folderId: string, folderName: string) => {
+      assignSignalToFolder(signalId, folderId);
+      toast.success("Assigned", {
+        description: `Signal added to "${folderName}".`,
+        duration: 2000,
+      });
+    },
+    [assignSignalToFolder]
+  );
+
+  const handleRemoveFromFolder = useCallback(
+    (signalId: string, folderId: string, folderName: string) => {
+      removeSignalFromFolder(signalId, folderId);
+      toast.info("Removed", {
+        description: `Signal removed from "${folderName}".`,
+        duration: 2000,
+      });
+    },
+    [removeSignalFromFolder]
+  );
+
   return {
     addBookmark: bookmark,
     removeBookmark: unbookmark,
     toggleBookmark: (id: string, label: string) => toggleBookmarkWithUndo(id, label),
     hasBookmark,
     directToggleBookmark: toggleBookmark,
+    createFolder: handleCreateFolder,
+    renameFolder: handleRenameFolder,
+    deleteFolder: handleDeleteFolder,
+    assignSignalToFolder: handleAssignToFolder,
+    removeSignalFromFolder: handleRemoveFromFolder,
   };
 }

@@ -143,6 +143,112 @@ describe("useBookmarkStore", () => {
   });
 });
 
+// ── Bookmark Folders ──────────────────────────────────────────────────────────
+
+describe("bookmark folders", () => {
+  beforeEach(() => {
+    useBookmarkStore.setState({
+      bookmarks: [],
+      folders: [],
+    });
+  });
+
+  it("createFolder adds a new folder with the given name", () => {
+    const id = useBookmarkStore.getState().createFolder("Watching");
+    const folders = useBookmarkStore.getState().folders;
+    expect(folders).toHaveLength(1);
+    expect(folders[0].id).toBe(id);
+    expect(folders[0].name).toBe("Watching");
+    expect(folders[0].signalIds).toEqual([]);
+  });
+
+  it("createFolder returns a unique id each time", () => {
+    const id1 = useBookmarkStore.getState().createFolder("A");
+    const id2 = useBookmarkStore.getState().createFolder("B");
+    expect(id1).not.toBe(id2);
+    expect(useBookmarkStore.getState().folders).toHaveLength(2);
+  });
+
+  it("renameFolder updates the folder name", () => {
+    const id = useBookmarkStore.getState().createFolder("Watch");
+    useBookmarkStore.getState().renameFolder(id, "Watching");
+    const folder = useBookmarkStore.getState().folders.find((f) => f.id === id);
+    expect(folder?.name).toBe("Watching");
+  });
+
+  it("deleteFolder removes the folder", () => {
+    const id = useBookmarkStore.getState().createFolder("Temp");
+    expect(useBookmarkStore.getState().folders).toHaveLength(1);
+    useBookmarkStore.getState().deleteFolder(id);
+    expect(useBookmarkStore.getState().folders).toHaveLength(0);
+  });
+
+  it("assignSignalToFolder adds signal id to folder signalIds", () => {
+    const id = useBookmarkStore.getState().createFolder("High Conviction");
+    useBookmarkStore.getState().assignSignalToFolder("signal-1", id);
+    const folder = useBookmarkStore.getState().folders.find((f) => f.id === id);
+    expect(folder?.signalIds).toEqual(["signal-1"]);
+  });
+
+  it("assignSignalToFolder does not duplicate signal ids", () => {
+    const id = useBookmarkStore.getState().createFolder("Test");
+    useBookmarkStore.getState().assignSignalToFolder("s1", id);
+    useBookmarkStore.getState().assignSignalToFolder("s1", id);
+    const folder = useBookmarkStore.getState().folders.find((f) => f.id === id);
+    expect(folder?.signalIds).toEqual(["s1"]);
+  });
+
+  it("removeSignalFromFolder removes signal id from folder", () => {
+    const id = useBookmarkStore.getState().createFolder("Test");
+    useBookmarkStore.getState().assignSignalToFolder("s1", id);
+    useBookmarkStore.getState().assignSignalToFolder("s2", id);
+    useBookmarkStore.getState().removeSignalFromFolder("s1", id);
+    const folder = useBookmarkStore.getState().folders.find((f) => f.id === id);
+    expect(folder?.signalIds).toEqual(["s2"]);
+  });
+
+  it("getSignalsByFolder returns signal ids for the folder", () => {
+    const id = useBookmarkStore.getState().createFolder("Test");
+    useBookmarkStore.getState().assignSignalToFolder("s1", id);
+    useBookmarkStore.getState().assignSignalToFolder("s2", id);
+    const ids = useBookmarkStore.getState().getSignalsByFolder(id);
+    expect(ids).toEqual(["s1", "s2"]);
+  });
+
+  it("getSignalsByFolder returns empty array for nonexistent folder", () => {
+    const ids = useBookmarkStore.getState().getSignalsByFolder("nonexistent");
+    expect(ids).toEqual([]);
+  });
+
+  it("getFoldersForSignal returns all folders containing the signal", () => {
+    const id1 = useBookmarkStore.getState().createFolder("A");
+    const id2 = useBookmarkStore.getState().createFolder("B");
+    useBookmarkStore.getState().assignSignalToFolder("s1", id1);
+    useBookmarkStore.getState().assignSignalToFolder("s1", id2);
+    useBookmarkStore.getState().assignSignalToFolder("s2", id1);
+    const folders = useBookmarkStore.getState().getFoldersForSignal("s1");
+    expect(folders).toHaveLength(2);
+    expect(folders.map((f) => f.name).sort()).toEqual(["A", "B"]);
+  });
+
+  it("removeBookmark also removes signal from all folders", () => {
+    const id = useBookmarkStore.getState().createFolder("Test");
+    useBookmarkStore.getState().addBookmark("s1");
+    useBookmarkStore.getState().assignSignalToFolder("s1", id);
+    useBookmarkStore.getState().removeBookmark("s1");
+    const folder = useBookmarkStore.getState().folders.find((f) => f.id === id);
+    expect(folder?.signalIds).toEqual([]);
+  });
+
+  it("clearBookmarks clears folders too", () => {
+    useBookmarkStore.getState().createFolder("A");
+    useBookmarkStore.getState().createFolder("B");
+    useBookmarkStore.getState().clearBookmarks();
+    expect(useBookmarkStore.getState().bookmarks).toEqual([]);
+    expect(useBookmarkStore.getState().folders).toEqual([]);
+  });
+});
+
 // ── useTransactionStore ───────────────────────────────────────────────────────
 
 const NEW_TX: TransactionHistoryItem = {
