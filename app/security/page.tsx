@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Bug, ChevronRight, Shield } from "lucide-react";
+import Link from "next/link";
+import { Bug, ChevronRight, Shield, MonitorSmartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -85,6 +86,30 @@ export default function SecuritySettingsPage() {
             onCancel={() => setShowSetup(false)}
           />
         )}
+
+        {/* Active Sessions entry point */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MonitorSmartphone size={16} className="text-blue-400" aria-hidden="true" />
+                <h2 className="text-sm font-semibold text-foreground">
+                  Active Sessions
+                </h2>
+              </div>
+            </div>
+            <p className="text-xs text-foreground-muted">
+              Review and revoke access for devices and browsers signed in to your account.
+            </p>
+          </CardHeader>
+          <CardContent className="px-5 pb-5">
+            <Button size="sm" asChild className="gap-1.5">
+              <Link href="/security/active-sessions" aria-label="Manage active sessions">
+                Manage sessions <ChevronRight size={13} aria-hidden="true" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* Privacy */}
         <Card>
