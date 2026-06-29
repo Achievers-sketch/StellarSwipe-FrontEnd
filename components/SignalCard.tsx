@@ -38,6 +38,7 @@ import { PremiumSignalBadge } from "@/components/PremiumSignalBadge";
 import { ProviderRatingBadge } from "@/components/ProviderRatingBadge";
 import { useDemoModeStore } from "@/store/useDemoModeStore";
 import { useBookmarkActions } from "@/hooks/useBookmarkActions";
+import { useRecentlyViewedStore } from "@/store/useRecentlyViewedStore";
 import { useSnoozeActions } from "@/hooks/useSnoozeActions";
 import { DEFAULT_SNOOZE_DURATION_MS } from "@/store/useSnoozeStore";
 import { TINT_THRESHOLD, MAX_TINT_OPACITY, classifyArrowKey } from "@/lib/signalGestures";
@@ -174,6 +175,14 @@ export function SignalCard({
   const deltaLabel = `${deltaPercent >= 0 ? "+" : ""}${deltaPercent.toFixed(2)}%`;
   const deltaAbsLabel = `${deltaValue >= 0 ? "+" : ""}${deltaValue.toFixed(4)}`;
   const deltaPositive = deltaValue >= 0;
+
+  const { addView } = useRecentlyViewedStore();
+
+  useEffect(() => {
+    if (detailsExpanded && signalId) {
+      addView(signalId);
+    }
+  }, [detailsExpanded, signalId, addView]);
 
   useEffect(() => {
     if (!copiedFeedback) return;

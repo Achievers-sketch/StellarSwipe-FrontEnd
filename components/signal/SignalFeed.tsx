@@ -14,7 +14,9 @@ import { PricePrecisionToggle } from "@/components/PricePrecisionToggle";
 import { ExpiredSignalBanner } from "@/components/ExpiredSignalBanner";
 import { useSignalFilterStore } from "@/store/useSignalFilterStore";
 import { useBookmarkStore } from "@/store/useBookmarkStore";
+import { useRecentlyViewedStore } from "@/store/useRecentlyViewedStore";
 import { useSnoozeStore, selectVisibleSignals } from "@/store/useSnoozeStore";
+import { RecentlyViewedStrip } from "@/components/RecentlyViewedStrip";
 import type { Signal } from "@/lib/signals";
 import { Search, X, SlidersHorizontal } from "lucide-react";
 import { useSyncStatus } from "@/hooks/useSyncStatus";
@@ -58,6 +60,7 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
   const pruneExpiredSnoozes = useSnoozeStore((state) => state.pruneExpired);
   const [providerSearch, setProviderSearch] = useState(provider);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const { addView } = useRecentlyViewedStore();
   // Bumped on a timer so expired snoozes are re-evaluated and signals return.
   const [snoozeTick, setSnoozeTick] = useState(0);
 
@@ -366,6 +369,9 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
         </div>
       </div>
 
+      {/* Recently Viewed Strip */}
+      <RecentlyViewedStrip />
+
       {/* Mobile bottom sheet */}
       <SignalFilterBottomSheet
         open={filterSheetOpen}
@@ -461,8 +467,9 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
                 >
                   <article
                     tabIndex={0}
+                    onClick={() => addView(signal.id)}
                     aria-label={`${signal.ticker} ${signal.action} signal, ${signal.confidence}% confidence${signal.provider ? `, provider ${signal.provider}` : ""}${signal.status ? `, status ${signal.status}` : ""}${isExpired ? ", expired" : ""}. Use arrow keys to navigate between signals.`}
-                    className="rounded-3xl border border-white/10 bg-slate-950/90 p-4 shadow-sm shadow-slate-950/20 transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 sm:p-6 mb-4"
+                    className="rounded-3xl border border-white/10 bg-slate-950/90 p-4 shadow-sm shadow-slate-950/20 transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 sm:p-6 mb-4 cursor-pointer"
                   >
                     {/* Expired banner — shown above content, clearly visible */}
                     {isExpired && (
