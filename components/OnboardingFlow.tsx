@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useOnboardingStore, useOnboardingHydrated } from "@/store/useOnboardingStore";
+import { useOnboardingStore, useOnboardingHydrated, ONBOARDING_TOTAL_STEPS } from "@/store/useOnboardingStore";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Wallet, LayoutList, ArrowLeftRight, X } from "lucide-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
@@ -34,23 +33,24 @@ const STEPS: OnboardingStep[] = [
 ];
 
 export function OnboardingFlow() {
-  const { dismissed, setCompleted, setDismissed } = useOnboardingStore();
+  const { dismissed, currentStep, setCompleted, setDismissed, setCurrentStep } = useOnboardingStore();
   const isHydrated = useOnboardingHydrated();
-  const [step, setStep] = useState(0);
+  const focusTrapRef = useFocusTrap({ isActive: true });
 
-  // Don't render until we know the persisted dismissed/completed state.
-  // This prevents flashing the onboarding dialog on returning users.
   if (!isHydrated || dismissed) return null;
 
+  const step = Math.min(currentStep, STEPS.length - 1);
   const current = STEPS[step];
   const Icon = current.icon;
   const isLast = step === STEPS.length - 1;
+  const progressPercent = Math.round(((step + 1) / STEPS.length) * 100);
 
   function handleNext() {
     if (isLast) {
       setCompleted();
     } else {
-      setStep((s) => s + 1);
+      const next = step + 1;
+      setCurrentStep(next);
     }
   }
 
@@ -62,7 +62,6 @@ export function OnboardingFlow() {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
     >
       <div ref={focusTrapRef} className="relative w-full max-w-sm rounded-3xl border border-white/10 bg-slate-950 p-6 shadow-2xl shadow-black/50">
-        {/* Skip button */}
         <button
           type="button"
           onClick={setDismissed}
@@ -72,8 +71,7 @@ export function OnboardingFlow() {
           <X size={16} aria-hidden="true" />
         </button>
 
-        {/* Step indicator */}
-        <div className="mb-6 flex items-center gap-1.5" aria-label={`Step ${step + 1} of ${STEPS.length}`}>
+        <div className="mb-4 flex items-center gap-1.5" aria-label={`Step ${step + 1} of ${STEPS.length}`}>
           {STEPS.map((_, i) => (
             <div
               key={i}
@@ -84,16 +82,17 @@ export function OnboardingFlow() {
           ))}
         </div>
 
-        {/* Icon */}
+        <p className="mb-4 text-xs text-foreground-muted">
+          Step {step + 1} of {STEPS.length} &middot; {progressPercent}% complete
+        </p>
+
         <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-500/15 text-sky-400">
           <Icon size={28} aria-hidden="true" />
         </div>
 
-        {/* Content */}
         <h2 className="mb-2 text-lg font-semibold text-white">{current.title}</h2>
         <p className="mb-6 text-sm leading-relaxed text-slate-400">{current.description}</p>
 
-        {/* Actions */}
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"

@@ -6,7 +6,7 @@ import {
   type TransactionHistoryItem,
 } from "@/store/useTransactionStore";
 import { useDemoModeStore } from "@/store/useDemoModeStore";
-import { useOnboardingStore } from "@/store/useOnboardingStore";
+import { useOnboardingStore, ONBOARDING_TOTAL_STEPS } from "@/store/useOnboardingStore";
 import { usePositionLimitStore } from "@/store/usePositionLimitStore";
 import { useSignalFilterStore } from "@/store/useSignalFilterStore";
 import { useThemeStore } from "@/store/useThemeStore";
@@ -250,6 +250,72 @@ describe("useTransactionStore", () => {
     expect(useTransactionStore.getState().preservedInput).toEqual({ amount: "42", type: "LIMIT" });
     useTransactionStore.getState().setPreservedInput(null);
     expect(useTransactionStore.getState().preservedInput).toBeNull();
+  });
+});
+
+// ── useOnboardingStore — resumable flow ──────────────────────────────────────
+
+describe("useOnboardingStore", () => {
+  beforeEach(() => {
+    useOnboardingStore.setState({
+      completed: false,
+      dismissed: false,
+      currentStep: 0,
+    });
+  });
+
+  it("starts with step 0 and not completed", () => {
+    const s = useOnboardingStore.getState();
+    expect(s.currentStep).toBe(0);
+    expect(s.completed).toBe(false);
+    expect(s.dismissed).toBe(false);
+  });
+
+  it("setCurrentStep persists the step", () => {
+    useOnboardingStore.getState().setCurrentStep(1);
+    expect(useOnboardingStore.getState().currentStep).toBe(1);
+  });
+
+  it("setCompleted marks completed and dismissed and sets step to max", () => {
+    useOnboardingStore.getState().setCompleted();
+    const s = useOnboardingStore.getState();
+    expect(s.completed).toBe(true);
+    expect(s.dismissed).toBe(true);
+    expect(s.currentStep).toBe(ONBOARDING_TOTAL_STEPS);
+  });
+
+  it("setDismissed marks dismissed without changing step", () => {
+    useOnboardingStore.getState().setCurrentStep(2);
+    useOnboardingStore.getState().setDismissed();
+    const s = useOnboardingStore.getState();
+    expect(s.dismissed).toBe(true);
+    expect(s.completed).toBe(false);
+    expect(s.currentStep).toBe(2);
+  });
+
+  it("resume from step 1 after simulated reload", () => {
+    useOnboardingStore.getState().setCurrentStep(1);
+    const state = useOnboardingStore.getState();
+    expect(state.currentStep).toBe(1);
+    expect(state.completed).toBe(false);
+    expect(state.dismissed).toBe(false);
+  });
+
+  it("resume from step 2 after simulated reload", () => {
+    useOnboardingStore.getState().setCurrentStep(2);
+    const state = useOnboardingStore.getState();
+    expect(state.currentStep).toBe(2);
+    expect(state.completed).toBe(false);
+  });
+
+  it("reset clears everything including currentStep", () => {
+    useOnboardingStore.getState().setCurrentStep(2);
+    useOnboardingStore.getState().setCompleted();
+    useOnboardingStore.getState().reset();
+    const s = useOnboardingStore.getState();
+    expect(s.completed).toBe(false);
+    expect(s.dismissed).toBe(false);
+    expect(s.currentStep).toBe(0);
   });
 });
 
