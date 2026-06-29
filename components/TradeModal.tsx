@@ -157,6 +157,17 @@ export function TradeModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, step, disabled, onClose]);
 
+  // Preset buttons: set amount to N% of wallet balance divided by current price
+  const applyPreset = useCallback(
+    (pct: number) => {
+      if (!price) return;
+      const xlm = (walletBalance * pct) / 100 / price;
+      setAmount(xlm.toFixed(2));
+      setTouched((t) => ({ ...t, amount: true }));
+    },
+    [price, walletBalance]
+  );
+
   const handleConfirm = useCallback(async () => {
     if (disabled) return;
     setSubmitting(true);
@@ -355,6 +366,32 @@ export function TradeModal({
                         {amountError}
                       </p>
                     )}
+
+                    {/* Quick size presets */}
+                    <div
+                      className="mt-1.5 flex gap-1"
+                      role="group"
+                      aria-label="Quick size presets"
+                    >
+                      {([25, 50, 75, 100] as const).map((pct) => (
+                        <button
+                          key={pct}
+                          type="button"
+                          onClick={() => applyPreset(pct)}
+                          disabled={!price}
+                          aria-label={`Set amount to ${pct === 100 ? "maximum" : `${pct}%`} of wallet balance`}
+                          className={`flex-1 rounded-md py-1 text-xs font-medium transition-colors
+                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface
+                            ${
+                              !price
+                                ? "cursor-not-allowed bg-foreground/5 text-foreground-subtle"
+                                : "bg-foreground/10 text-foreground-muted hover:bg-foreground/20 hover:text-foreground"
+                            }`}
+                        >
+                          {pct === 100 ? "Max" : `${pct}%`}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Total (read-only) */}

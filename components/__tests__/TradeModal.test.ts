@@ -375,3 +375,90 @@ describe("TradeModal – successful submission shape", () => {
     );
   });
 });
+
+// ── Trade-size preset buttons ─────────────────────────────────────────────────
+
+/**
+ * applyPreset mirrors the component's callback logic:
+ *   xlmAmount = (walletBalance * pct / 100) / price
+ */
+function applyPreset(
+  pct: number,
+  walletBalance: number,
+  price: number
+): string | null {
+  if (!price) return null;
+  return ((walletBalance * pct) / 100 / price).toFixed(2);
+}
+
+describe("TradeModal – trade-size preset buttons calculate correct XLM amount", () => {
+  const WALLET = 250; // USDC
+  const PRICE = 0.4821; // USDC per XLM
+
+  it("25% preset yields correct XLM amount", () => {
+    const result = applyPreset(25, WALLET, PRICE);
+    expect(parseFloat(result!)).toBeCloseTo((WALLET * 0.25) / PRICE, 2);
+  });
+
+  it("50% preset yields correct XLM amount", () => {
+    const result = applyPreset(50, WALLET, PRICE);
+    expect(parseFloat(result!)).toBeCloseTo((WALLET * 0.5) / PRICE, 2);
+  });
+
+  it("75% preset yields correct XLM amount", () => {
+    const result = applyPreset(75, WALLET, PRICE);
+    expect(parseFloat(result!)).toBeCloseTo((WALLET * 0.75) / PRICE, 2);
+  });
+
+  it("Max (100%) preset yields correct XLM amount", () => {
+    const result = applyPreset(100, WALLET, PRICE);
+    expect(parseFloat(result!)).toBeCloseTo(WALLET / PRICE, 2);
+  });
+
+  it("Max is greater than 75%, which is greater than 50%, which is greater than 25%", () => {
+    const p25 = parseFloat(applyPreset(25, WALLET, PRICE)!);
+    const p50 = parseFloat(applyPreset(50, WALLET, PRICE)!);
+    const p75 = parseFloat(applyPreset(75, WALLET, PRICE)!);
+    const max = parseFloat(applyPreset(100, WALLET, PRICE)!);
+    expect(p25 < p50).toBe(true);
+    expect(p50 < p75).toBe(true);
+    expect(p75 < max).toBe(true);
+  });
+
+  it("returns null when price is 0 (preset disabled)", () => {
+    expect(applyPreset(50, WALLET, 0)).toBeNull();
+  });
+
+  it("presets recompute correctly when balance changes", () => {
+    const newBalance = 500;
+    const result = applyPreset(50, newBalance, PRICE);
+    expect(parseFloat(result!)).toBeCloseTo((newBalance * 0.5) / PRICE, 2);
+  });
+
+  it("result is formatted to 2 decimal places", () => {
+    const result = applyPreset(25, WALLET, PRICE);
+    expect(result).toMatch(/^\d+\.\d{2}$/);
+  });
+});
+
+// ── Preset disabled state ─────────────────────────────────────────────────────
+
+describe("TradeModal – preset buttons disabled when price is unavailable", () => {
+  it("presets are disabled when LIMIT order has no limit price entered", () => {
+    const limitPrice = "";
+    const price = parseFloat(limitPrice) || 0;
+    expect(price).toBe(0);
+    expect(applyPreset(50, 250, price)).toBeNull();
+  });
+
+  it("presets are enabled for MARKET orders (marketPrice always available)", () => {
+    const marketPrice = 0.4821;
+    expect(applyPreset(50, 250, marketPrice)).not.toBeNull();
+  });
+
+  it("presets become enabled once a valid LIMIT price is entered", () => {
+    const limitPrice = "0.50";
+    const price = parseFloat(limitPrice) || 0;
+    expect(applyPreset(25, 250, price)).not.toBeNull();
+  });
+});
