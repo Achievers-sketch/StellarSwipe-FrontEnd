@@ -34,6 +34,7 @@ import { MiniChart } from "./chart/MiniChart";
 import { CandlestickChart } from "./chart/CandlestickChart";
 import { useChartStyleStore } from "@/store/useChartStyleStore";
 import { BarChart2, LineChart } from "lucide-react";
+import { GlossaryTerm } from "@/components/GlossaryTerm";
 import { PremiumSignalBadge } from "@/components/PremiumSignalBadge";
 import { ProviderRatingBadge } from "@/components/ProviderRatingBadge";
 import { useDemoModeStore } from "@/store/useDemoModeStore";
@@ -458,7 +459,7 @@ export function SignalCard({
                   <span aria-hidden="true">·</span>
                   <span>{signalAction}</span>
                   <span aria-hidden="true">·</span>
-                  <span>{signalConfidence}% confidence</span>
+                  <span>{signalConfidence}% <GlossaryTerm term="confidence">confidence</GlossaryTerm></span>
                 </div>
               </div>
 

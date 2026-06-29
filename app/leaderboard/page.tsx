@@ -7,6 +7,7 @@ import { SignalProvider } from "@/lib/types";
 import { Loader2, ChevronUp, ChevronDown } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { LeaderboardErrorBoundary } from "@/components/LeaderboardErrorBoundary";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 type SortField = "rank" | "overallScore" | "winRate" | "recentPerformance";
 type SortDirection = "asc" | "desc";
@@ -105,6 +106,7 @@ function LeaderboardPageInner() {
   }
 
   return (
+    <>
     <PageTransition>
       <main className="flex min-h-screen flex-col gap-6 p-4 sm:gap-8 sm:p-8 bg-gray-950">
         <header className="w-full">
@@ -204,5 +206,7 @@ function LeaderboardPageInner() {
         )}
       </main>
     </PageTransition>
+    <ScrollToTop />
+    </>
   );
 }
