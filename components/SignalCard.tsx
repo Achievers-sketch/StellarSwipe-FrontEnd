@@ -40,7 +40,12 @@ import { useDemoModeStore } from "@/store/useDemoModeStore";
 import { useBookmarkActions } from "@/hooks/useBookmarkActions";
 import { useSnoozeActions } from "@/hooks/useSnoozeActions";
 import { DEFAULT_SNOOZE_DURATION_MS } from "@/store/useSnoozeStore";
-import { TINT_THRESHOLD, MAX_TINT_OPACITY, classifyArrowKey } from "@/lib/signalGestures";
+import { TINT_THRESHOLD, MAX_TINT_OPACITY, classifyArrowKeyWithSettings } from "@/lib/signalGestures";
+import {
+  useSwipeSettingsStore,
+  getEffectiveSwipeThreshold,
+  getEffectiveVelocityThreshold,
+} from "@/store/useSwipeSettingsStore";
 import { usePriceFormat } from "@/hooks/usePriceFormat";
 import { useSignalPrice } from "@/hooks/useSignalPrice";
 import { toast } from "@/lib/toast";
@@ -89,8 +94,9 @@ const DEFAULT_ROI: ROIPoint[] = [
   { value: 4.2 },
 ];
 
-const SWIPE_THRESHOLD = 120;
-const VELOCITY_THRESHOLD = 780;
+// NOTE: swipe thresholds are now derived dynamically from the user's swipe settings.
+// The constants below are kept as a fallback reference only — actual values used
+// inside the component are obtained from useSwipeSettingsStore.
 
 export function SignalCard({
   loading = false,
@@ -132,6 +138,9 @@ export function SignalCard({
   const { isRTL: rtl } = useI18n();
   const { chartStyle, setChartStyle } = useChartStyleStore();
   const fmt = usePriceFormat();
+  const { sensitivity, swapDirections } = useSwipeSettingsStore();
+  const SWIPE_THRESHOLD = getEffectiveSwipeThreshold(sensitivity);
+  const VELOCITY_THRESHOLD = getEffectiveVelocityThreshold(sensitivity);
   const executingRef = useRef(false);
   const shareMenuRef = useRef<HTMLDivElement>(null);
   const hasVibratedRef = useRef(false);
@@ -292,14 +301,14 @@ export function SignalCard({
   }
 
   function handleKeyDown(e: KeyboardEvent) {
-    const arrowAction = classifyArrowKey(e.key, showPassAction);
+    const arrowAction = classifyArrowKeyWithSettings(e.key, showPassAction, swapDirections);
     if (arrowAction === "trade") {
       e.preventDefault();
-      flashSwipeFeedback(1);
+      flashSwipeFeedback(swapDirections ? -1 : 1);
       handleExecuteTrade();
     } else if (arrowAction === "pass") {
       e.preventDefault();
-      flashSwipeFeedback(-1);
+      flashSwipeFeedback(swapDirections ? 1 : -1);
       handlePass();
     } else if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -338,18 +347,22 @@ export function SignalCard({
     const velocityX = info.velocity.x;
     const fastSwipe = Math.abs(velocityX) > VELOCITY_THRESHOLD && Math.abs(offsetX) > 40;
 
-    // In RTL, swipe directions are mirrored: right=pass, left=trade
-    const tradeSwipe = rtl ? offsetX < -SWIPE_THRESHOLD : offsetX > SWIPE_THRESHOLD;
-    const tradeVelocity = rtl
+    // Effective direction: RTL and/or swapDirections each independently flip
+    // the left/right meaning. XOR-ing them covers all four combinations.
+    const effectivelyFlipped = rtl !== swapDirections; // XOR: flipped when exactly one is true
+
+    // In RTL or when directions are swapped: right=pass, left=trade
+    const tradeSwipe = effectivelyFlipped ? offsetX < -SWIPE_THRESHOLD : offsetX > SWIPE_THRESHOLD;
+    const tradeVelocity = effectivelyFlipped
       ? offsetX < -SWIPE_THRESHOLD * 0.4 && velocityX < -VELOCITY_THRESHOLD
       : offsetX > SWIPE_THRESHOLD * 0.4 && velocityX > VELOCITY_THRESHOLD;
-    const tradeFast = fastSwipe && (rtl ? velocityX < 0 : velocityX > 0);
+    const tradeFast = fastSwipe && (effectivelyFlipped ? velocityX < 0 : velocityX > 0);
 
-    const passSwipe = rtl ? offsetX > SWIPE_THRESHOLD : offsetX < -SWIPE_THRESHOLD;
-    const passVelocity = rtl
+    const passSwipe = effectivelyFlipped ? offsetX > SWIPE_THRESHOLD : offsetX < -SWIPE_THRESHOLD;
+    const passVelocity = effectivelyFlipped
       ? offsetX > SWIPE_THRESHOLD * 0.4 && velocityX > VELOCITY_THRESHOLD
       : offsetX < -SWIPE_THRESHOLD * 0.4 && velocityX < -VELOCITY_THRESHOLD;
-    const passFast = fastSwipe && (rtl ? velocityX > 0 : velocityX < 0);
+    const passFast = fastSwipe && (effectivelyFlipped ? velocityX > 0 : velocityX < 0);
 
     if (tradeSwipe || tradeVelocity || tradeFast) {
       handleExecuteTrade();
