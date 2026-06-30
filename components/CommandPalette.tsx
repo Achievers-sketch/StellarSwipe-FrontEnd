@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useThemeStore } from "@/store/useThemeStore";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface CommandItem {
   id: string;
@@ -160,8 +161,12 @@ export function CommandPalette({ open, onClose, onConnectWallet }: CommandPalett
           className="max-h-72 overflow-y-auto p-1"
         >
           {filtered.length === 0 ? (
-            <li className="px-4 py-8 text-center text-sm text-muted-foreground">
-              No results for &ldquo;{query}&rdquo;
+            <li className="px-2 py-2">
+              <EmptyState
+                title="No results"
+                description={`No results for "${query}"`}
+                className="rounded-xl bg-transparent py-8"
+              />
             </li>
           ) : (
             filtered.map((item, i) => (

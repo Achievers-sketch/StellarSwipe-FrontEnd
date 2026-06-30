@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { usePerformanceMonitoringStore } from "@/store/usePerformanceMonitoringStore";
 import type { NetworkConnectionType } from "@/lib/performance/types";
+import { EmptyState } from "@/components/ui/empty-state";
 
 function formatMs(ms: number): string {
   return `${ms} ms`;
@@ -87,8 +88,12 @@ function HeatmapCanvas({ points }: { points: { x: number; y: number }[] }) {
         />
       ))}
       {points.length === 0 && (
-        <div className="flex h-full items-center justify-center text-xs text-foreground-muted">
-          No interactions recorded yet
+        <div className="p-3">
+          <EmptyState
+            title="No interactions recorded yet"
+            description="Interact with the app and this heatmap will populate automatically."
+            className="h-full rounded-lg bg-transparent py-6"
+          />
         </div>
       )}
     </div>
@@ -239,7 +244,11 @@ export function PerformanceDashboard() {
             Page load time by route
           </h2>
           {routeStats.length === 0 ? (
-            <p className="text-sm text-foreground-muted">No route data yet.</p>
+            <EmptyState
+              title="No route data yet"
+              description="Route load timings will appear after you navigate through the app."
+              className="rounded-xl bg-transparent py-6"
+            />
           ) : (
             <ul className="space-y-2">
               {routeStats.map((r) => (
@@ -279,7 +288,11 @@ export function PerformanceDashboard() {
                 />
               ))}
             {summary.apiResponses.length === 0 && (
-              <p className="text-sm text-foreground-muted">No API data yet.</p>
+              <EmptyState
+                title="No API data yet"
+                description="API response metrics will appear once requests are captured."
+                className="rounded-xl bg-transparent py-6"
+              />
             )}
           </div>
         </section>
@@ -300,7 +313,11 @@ export function PerformanceDashboard() {
             Crash reports
           </h2>
           {summary.crashes.length === 0 ? (
-            <p className="text-sm text-foreground-muted">No crashes recorded.</p>
+            <EmptyState
+              title="No crashes recorded"
+              description="Great news: no crash reports were captured in this session."
+              className="rounded-xl bg-transparent py-6"
+            />
           ) : (
             <ul className="max-h-80 space-y-3 overflow-y-auto">
               {summary.crashes

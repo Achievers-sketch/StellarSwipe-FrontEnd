@@ -3,6 +3,7 @@
 import { useSignals } from "@/hooks/useSignals";
 import { useComparisonStore } from "@/store/useComparisonStore";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Plus, Check, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +21,13 @@ export function AddSignalPanel() {
   }
 
   if (!signals?.length) {
-    return <p className="text-gray-400 text-sm py-4">No signals available.</p>;
+    return (
+      <EmptyState
+        title="No signals available"
+        description="Try again in a moment or adjust your signal source filters."
+        className="rounded-xl bg-transparent py-6"
+      />
+    );
   }
 
   return (

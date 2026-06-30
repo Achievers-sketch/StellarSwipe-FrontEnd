@@ -5,6 +5,7 @@ import { ArrowRight, CheckCircle2, Clock3, XCircle } from "lucide-react";
 import { useTransactionStore } from "@/store/useTransactionStore";
 import { cn } from "@/lib/utils";
 import { RelativeTimestamp } from "@/components/RelativeTimestamp";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const TYPE_OPTIONS = [
   { label: "All", value: "ALL" },
@@ -95,9 +96,11 @@ export function TransactionActivityFeed() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-sm text-muted-foreground">
-          No activity matches the current filters.
-        </div>
+        <EmptyState
+          title="No activity for these filters"
+          description="Try a different type or status to see matching transactions."
+          className="rounded-2xl border-dashed bg-white/5 py-8"
+        />
       ) : (
         <div className="space-y-3">
           {filtered.map((item) => (
