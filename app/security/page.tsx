@@ -13,6 +13,7 @@ import { auditReports } from "@/content/audits";
 import { AnalyticsConsentToggle } from "@/components/AnalyticsConsentToggle";
 import { NotificationPermissionButton } from "@/components/NotificationPermissionButton";
 import { useNotificationPreference } from "@/hooks/useNotificationPreference";
+import { SettingsBreadcrumb } from "@/components/SettingsBreadcrumb";
 
 export default function SecuritySettingsPage() {
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
@@ -27,6 +28,7 @@ export default function SecuritySettingsPage() {
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 sm:py-8 lg:px-8 text-foreground">
       <div className="mx-auto w-full max-w-2xl space-y-6">
+        <SettingsBreadcrumb />
         {/* Page header */}
         <div className="flex items-center gap-2">
           <Shield size={20} className="text-blue-400" aria-hidden="true" />
