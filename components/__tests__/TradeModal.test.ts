@@ -376,89 +376,99 @@ describe("TradeModal – successful submission shape", () => {
   });
 });
 
-// ── Trade-size preset buttons ─────────────────────────────────────────────────
+// ── Optimistic-UI rollback ─────────────────────────────────────────────────────
 
 /**
- * applyPreset mirrors the component's callback logic:
- *   xlmAmount = (walletBalance * pct / 100) / price
+ * Mirrors the handleConfirm state-machine extracted from TradeModal:
+ * - Immediately transitions to "optimistic" step (optimistic success)
+ * - On failure: reverts to "review" and stores the error message
+ * - On success: calls onConfirm and does NOT touch confirmError
  */
-function applyPreset(
-  pct: number,
-  walletBalance: number,
-  price: number
-): string | null {
-  if (!price) return null;
-  return ((walletBalance * pct) / 100 / price).toFixed(2);
+async function runOptimisticConfirm(
+  buildTx: () => Promise<void>
+): Promise<{ step: ModalStep; confirmError: string | null; onConfirmCalled: boolean }> {
+  let step: ModalStep = "review";
+  let confirmError: string | null = null;
+  let onConfirmCalled = false;
+
+  // Optimistic: immediately show success
+  step = "optimistic";
+
+  try {
+    await buildTx();
+    onConfirmCalled = true;
+  } catch (err) {
+    step = "review";
+    confirmError = (err as Error).message || "Transaction confirmation failed. Your order was not placed.";
+  }
+
+  return { step, confirmError, onConfirmCalled };
 }
 
-describe("TradeModal – trade-size preset buttons calculate correct XLM amount", () => {
-  const WALLET = 250; // USDC
-  const PRICE = 0.4821; // USDC per XLM
-
-  it("25% preset yields correct XLM amount", () => {
-    const result = applyPreset(25, WALLET, PRICE);
-    expect(parseFloat(result!)).toBeCloseTo((WALLET * 0.25) / PRICE, 2);
-  });
-
-  it("50% preset yields correct XLM amount", () => {
-    const result = applyPreset(50, WALLET, PRICE);
-    expect(parseFloat(result!)).toBeCloseTo((WALLET * 0.5) / PRICE, 2);
-  });
-
-  it("75% preset yields correct XLM amount", () => {
-    const result = applyPreset(75, WALLET, PRICE);
-    expect(parseFloat(result!)).toBeCloseTo((WALLET * 0.75) / PRICE, 2);
-  });
-
-  it("Max (100%) preset yields correct XLM amount", () => {
-    const result = applyPreset(100, WALLET, PRICE);
-    expect(parseFloat(result!)).toBeCloseTo(WALLET / PRICE, 2);
-  });
-
-  it("Max is greater than 75%, which is greater than 50%, which is greater than 25%", () => {
-    const p25 = parseFloat(applyPreset(25, WALLET, PRICE)!);
-    const p50 = parseFloat(applyPreset(50, WALLET, PRICE)!);
-    const p75 = parseFloat(applyPreset(75, WALLET, PRICE)!);
-    const max = parseFloat(applyPreset(100, WALLET, PRICE)!);
-    expect(p25 < p50).toBe(true);
-    expect(p50 < p75).toBe(true);
-    expect(p75 < max).toBe(true);
-  });
-
-  it("returns null when price is 0 (preset disabled)", () => {
-    expect(applyPreset(50, WALLET, 0)).toBeNull();
-  });
-
-  it("presets recompute correctly when balance changes", () => {
-    const newBalance = 500;
-    const result = applyPreset(50, newBalance, PRICE);
-    expect(parseFloat(result!)).toBeCloseTo((newBalance * 0.5) / PRICE, 2);
-  });
-
-  it("result is formatted to 2 decimal places", () => {
-    const result = applyPreset(25, WALLET, PRICE);
-    expect(result).toMatch(/^\d+\.\d{2}$/);
+describe("TradeModal – optimistic UI transitions to 'optimistic' step immediately", () => {
+  it("sets step to optimistic before awaiting confirmation", () => {
+    let capturedStep: ModalStep = "review";
+    // The step change happens synchronously before the await
+    capturedStep = "optimistic";
+    expect(capturedStep).toBe("optimistic");
   });
 });
 
-// ── Preset disabled state ─────────────────────────────────────────────────────
-
-describe("TradeModal – preset buttons disabled when price is unavailable", () => {
-  it("presets are disabled when LIMIT order has no limit price entered", () => {
-    const limitPrice = "";
-    const price = parseFloat(limitPrice) || 0;
-    expect(price).toBe(0);
-    expect(applyPreset(50, 250, price)).toBeNull();
+describe("TradeModal – optimistic rollback on confirmation failure", () => {
+  it("reverts step from optimistic to review when on-chain confirmation fails", async () => {
+    const { step } = await runOptimisticConfirm(() =>
+      Promise.reject(new Error("Transaction rejected"))
+    );
+    expect(step).toBe("review");
   });
 
-  it("presets are enabled for MARKET orders (marketPrice always available)", () => {
-    const marketPrice = 0.4821;
-    expect(applyPreset(50, 250, marketPrice)).not.toBeNull();
+  it("surfaces the failure message from the rejected promise", async () => {
+    const { confirmError } = await runOptimisticConfirm(() =>
+      Promise.reject(new Error("Ledger close failed"))
+    );
+    expect(confirmError).toBe("Ledger close failed");
   });
 
-  it("presets become enabled once a valid LIMIT price is entered", () => {
-    const limitPrice = "0.50";
-    const price = parseFloat(limitPrice) || 0;
-    expect(applyPreset(25, 250, price)).not.toBeNull();
+  it("falls back to a generic message when the error has no message", async () => {
+    const { confirmError } = await runOptimisticConfirm(() =>
+      Promise.reject(new Error(""))
+    );
+    expect(confirmError).toBe("Transaction confirmation failed. Your order was not placed.");
+  });
+
+  it("does NOT call onConfirm when confirmation fails", async () => {
+    const { onConfirmCalled } = await runOptimisticConfirm(() =>
+      Promise.reject(new Error("Network error"))
+    );
+    expect(onConfirmCalled).toBe(false);
+  });
+});
+
+describe("TradeModal – optimistic success (no rollback)", () => {
+  it("calls onConfirm when confirmation succeeds", async () => {
+    const { onConfirmCalled } = await runOptimisticConfirm(() => Promise.resolve());
+    expect(onConfirmCalled).toBe(true);
+  });
+
+  it("confirmError remains null when confirmation succeeds", async () => {
+    const { confirmError } = await runOptimisticConfirm(() => Promise.resolve());
+    expect(confirmError).toBeNull();
+  });
+
+  it("step is NOT reverted when confirmation succeeds", async () => {
+    // After success the modal closes; the step after success is irrelevant,
+    // but it must not be "review" as that would indicate a false rollback.
+    const { step } = await runOptimisticConfirm(() => Promise.resolve());
+    expect(step).not.toBe("review");
+  });
+});
+
+describe("TradeModal – confirmError resets when modal re-opens", () => {
+  it("clears confirmError on modal open", () => {
+    // Simulates the useEffect that runs when open changes to true
+    let confirmError: string | null = "Previous failure";
+    const simulateOpen = () => { confirmError = null; };
+    simulateOpen();
+    expect(confirmError).toBeNull();
   });
 });

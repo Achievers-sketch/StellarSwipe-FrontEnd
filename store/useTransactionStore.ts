@@ -41,6 +41,7 @@ interface TransactionState {
   clearError: () => void;
   setPreservedInput: (input: Record<string, unknown> | null) => void;
   addTransaction: (transaction: TransactionHistoryItem) => void;
+  bulkAddTransactions: (transactions: TransactionHistoryItem[]) => void;
   updateTransactionStatus: (
     id: string,
     status: TransactionStatus,
@@ -114,6 +115,9 @@ export const useTransactionStore = create<TransactionState>()((set) => ({
 
   addTransaction: (transaction) =>
     set((state) => ({ history: [transaction, ...state.history] })),
+
+  bulkAddTransactions: (transactions) =>
+    set((state) => ({ history: [...transactions, ...state.history] })),
 
   updateTransactionStatus: (id, status, outcome) =>
     set((state) => ({
