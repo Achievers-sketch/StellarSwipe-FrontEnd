@@ -11,10 +11,14 @@ import { SignalFeedFilters } from "@/components/SignalFeedFilters";
 import { SignalSortControls } from "@/components/SignalSortControls";
 import { SignalFilterBottomSheet } from "@/components/SignalFilterBottomSheet";
 import { PricePrecisionToggle } from "@/components/PricePrecisionToggle";
+import { FeedDensityToggle } from "@/components/FeedDensityToggle";
+import { useFeedDensityStore } from "@/store/useFeedDensityStore";
 import { ExpiredSignalBanner } from "@/components/ExpiredSignalBanner";
 import { useSignalFilterStore } from "@/store/useSignalFilterStore";
 import { useBookmarkStore } from "@/store/useBookmarkStore";
+import { useRecentlyViewedStore } from "@/store/useRecentlyViewedStore";
 import { useSnoozeStore, selectVisibleSignals } from "@/store/useSnoozeStore";
+import { RecentlyViewedStrip } from "@/components/RecentlyViewedStrip";
 import type { Signal } from "@/lib/signals";
 import { Search, X, SlidersHorizontal } from "lucide-react";
 import { useSyncStatus } from "@/hooks/useSyncStatus";
@@ -61,12 +65,14 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
     sortOrder,
     setProvider,
   } = useSignalFilterStore();
+  const density = useFeedDensityStore((s) => s.density);
   const bookmarkedIds = useBookmarkStore((state) => state.bookmarks);
   // #321: snoozed signals are hidden from the feed until their snooze elapses.
   const snoozedMap = useSnoozeStore((state) => state.snoozed);
   const pruneExpiredSnoozes = useSnoozeStore((state) => state.pruneExpired);
   const [providerSearch, setProviderSearch] = useState(provider);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const { addView } = useRecentlyViewedStore();
   // Bumped on a timer so expired snoozes are re-evaluated and signals return.
   const [snoozeTick, setSnoozeTick] = useState(0);
 
@@ -384,8 +390,12 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
         <div className="flex flex-col items-end gap-2">
           {/* Sort controls — persistent across browsing */}
           <SignalSortControls />
-          {/* Price precision toggle */}
-          <PricePrecisionToggle />
+          <div className="flex items-center gap-2">
+            {/* Price precision toggle */}
+            <PricePrecisionToggle />
+            {/* Density toggle — persisted across sessions */}
+            <FeedDensityToggle />
+          </div>
           {/* #98: show consistent loading state */}
           <div className="text-right text-sm text-foreground-muted" aria-live="polite" aria-atomic="true">
             {isFetching && !allSignals.length
@@ -457,6 +467,9 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
         </div>
       </div>
 
+      {/* Recently Viewed Strip */}
+      <RecentlyViewedStrip />
+
       {/* Mobile bottom sheet */}
       <SignalFilterBottomSheet
         open={filterSheetOpen}
@@ -502,14 +515,41 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
               next?.focus();
             }}
           >
-            {isError && (
-              <div
-                role="alert"
-                className="rounded-3xl border border-accent-danger/20 bg-accent-danger/10 p-5 text-sm text-accent-danger"
-              >
-                {error?.message ?? "There was a problem loading the signal feed."}
-              </div>
-            )}
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const signal = signals[virtualRow.index];
+              const isExpired =
+                !!signal.expiresAt && new Date(signal.expiresAt) < new Date();
+
+              return (
+                <div
+                  key={virtualRow.key}
+                  data-index={virtualRow.index}
+                  ref={virtualizer.measureElement}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  <article
+                    tabIndex={0}
+                    onClick={() => addView(signal.id)}
+                    aria-label={`${signal.ticker} ${signal.action} signal, ${signal.confidence}% confidence${signal.provider ? `, provider ${signal.provider}` : ""}${signal.status ? `, status ${signal.status}` : ""}${isExpired ? ", expired" : ""}. Use arrow keys to navigate between signals.`}
+                    data-density={density}
+                    className={`rounded-3xl border border-white/10 bg-slate-950/90 shadow-sm shadow-slate-950/20 transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
+                      density === "compact"
+                        ? "p-2 sm:p-3 mb-2"
+                        : "p-4 sm:p-6 mb-4"
+                    }`}
+                  >
+                    {/* Expired banner — shown above content, clearly visible */}
+                    {isExpired && (
+                      <div className="mb-3">
+                        <ExpiredSignalBanner onRefresh={() => refetch()} />
+                      </div>
+                    )}
 
             {!isLoading && !isError && signals.length === 0 && (
               <SignalEmptyState
@@ -560,21 +600,39 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
                         transform: `translateY(${virtualRow.start}px)`,
                       }}
                     >
-                      <article
-                        tabIndex={0}
-                        onClick={() => setSelectedSignalId(signal.id)}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" || event.key === " ") {
-                            event.preventDefault();
-                            setSelectedSignalId(signal.id);
-                          }
-                        }}
-                        aria-label={`${signal.ticker} ${signal.action} signal, ${signal.confidence}% confidence${signal.provider ? `, provider ${signal.provider}` : ""}${signal.status ? `, status ${signal.status}` : ""}${isExpired ? ", expired" : ""}. Use arrow keys to navigate between signals.`}
-                        className={`mb-4 rounded-3xl border bg-slate-950/90 p-4 shadow-sm shadow-slate-950/20 transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 sm:p-6 ${isSelected ? "border-sky-500/50" : "border-white/10"}`}
-                      >
-                        {isExpired && (
-                          <div className="mb-3">
-                            <ExpiredSignalBanner onRefresh={() => refetch()} />
+                      <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between ${density === "compact" ? "gap-2" : "gap-4"}`}>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.3em] text-foreground-muted">
+                            <time dateTime={signal.timestamp}>
+                              <RelativeTimestamp timestamp={new Date(signal.timestamp)} />
+                            </time>
+                          </p>
+                          <h3 className="mt-2 text-base font-semibold tracking-tight text-white sm:text-xl">
+                            {signal.ticker} • {signal.action}
+                          </h3>
+                          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                            {signal.provider && (
+                              <span
+                                className="inline-flex items-center rounded-md bg-sky-500/10 px-2 py-0.5 text-[11px] font-medium text-sky-300 ring-1 ring-inset ring-sky-500/20"
+                                aria-label={`Provider: ${signal.provider}`}
+                              >
+                                {signal.provider}
+                              </span>
+                            )}
+                            {signal.status && (
+                              <span
+                                className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${
+                                  signal.status === "Active"
+                                    ? "bg-emerald-500/10 text-emerald-300 ring-emerald-500/20"
+                                    : signal.status === "Waiting"
+                                    ? "bg-amber-500/10 text-amber-300 ring-amber-500/20"
+                                    : "bg-slate-500/10 text-slate-400 ring-slate-500/20"
+                                }`}
+                                aria-label={`Status: ${signal.status}`}
+                              >
+                                {signal.status}
+                              </span>
+                            )}
                           </div>
                         )}
 
@@ -626,7 +684,8 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
                           </div>
                           <p className="mt-4 text-sm leading-6 text-foreground-muted">{signal.details}</p>
                         </div>
-                      </article>
+                      </div>
+                      <p className={`text-sm leading-6 text-foreground-muted ${density === "compact" ? "mt-2" : "mt-4"}`}>{signal.details}</p>
                     </div>
                   );
                 })}

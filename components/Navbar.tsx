@@ -13,7 +13,8 @@ import { CommandPalette } from "@/components/CommandPalette";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
-  { href: "/signals", label: "Signals" },
+  { href: "/app", label: "Signals" },
+  { href: "/journal", label: "Journal" },
   { href: "/bookmarks", label: "Bookmarks" },
   { href: "/providers", label: "Providers" },
   { href: "/tax-report", label: "Tax Report" },

@@ -2,6 +2,7 @@
 
 import { AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { GlossaryTerm } from "@/components/GlossaryTerm";
 
 interface SlippageWarningProps {
   /** Slippage percentage, e.g. 1.8 means 1.8% */
@@ -63,7 +64,11 @@ export function SlippageWarning({
                   isDanger ? "text-accent-danger" : "text-accent-warning"
                 }`}
               >
-                {isDanger ? "High slippage detected" : "Slippage warning"}
+                {isDanger ? (
+                  <>High <GlossaryTerm term="slippage">slippage</GlossaryTerm> detected</>
+                ) : (
+                  <><GlossaryTerm term="slippage">Slippage</GlossaryTerm> warning</>
+                )}
               </p>
               <p className="mt-0.5 text-xs text-foreground-muted leading-relaxed">
                 Estimated slippage is{" "}

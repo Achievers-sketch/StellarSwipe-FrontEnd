@@ -1,16 +1,17 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, Printer, GitCompare, Link as LinkIcon, Check } from "lucide-react";
+import { Plus, Trash2, Printer, GitCompare, Link as LinkIcon, Check, Download, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageTransition } from "@/components/PageTransition";
 import { useComparisonStore } from "@/store/useComparisonStore";
 import { MetricToggleBar } from "@/components/comparison/MetricToggleBar";
 import { fetchSignals } from "@/lib/api";
 import { ComparisonErrorBoundary } from "@/components/ComparisonErrorBoundary";
+import { downloadComparisonCsv, downloadComparisonImage } from "@/lib/exportComparison";
 
 const ComparisonCard = dynamic(
   () => import("@/components/comparison/ComparisonCard").then((m) => m.ComparisonCard),
@@ -50,6 +51,8 @@ function ComparePageContent() {
   const { signals, removeSignal, clearSignals, hiddenMetrics, toggleMetric, canAdd, addSignal } = useComparisonStore();
   const [addPanelOpen, setAddPanelOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [exportingImage, setExportingImage] = useState(false);
+  const tableRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -91,6 +94,20 @@ function ComparePageContent() {
     window.print();
   };
 
+  const handleExportCsv = () => {
+    downloadComparisonCsv(signals);
+  };
+
+  const handleExportImage = async () => {
+    if (!tableRef.current) return;
+    setExportingImage(true);
+    try {
+      await downloadComparisonImage(tableRef.current);
+    } finally {
+      setExportingImage(false);
+    }
+  };
+
   return (
     <PageTransition>
       <main className="min-h-screen bg-gray-950 text-white">
@@ -114,6 +131,20 @@ function ComparePageContent() {
                   <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-2">
                     <Printer className="h-4 w-4" />
                     Export PDF
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleExportCsv} className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Export CSV
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportImage}
+                    disabled={exportingImage}
+                    className="gap-2"
+                  >
+                    <ImageIcon className="h-4 w-4" />
+                    {exportingImage ? "Capturing…" : "Export Image"}
                   </Button>
                   <Button variant="ghost" size="sm" onClick={clearSignals} className="gap-2 text-red-400 hover:text-red-300">
                     <Trash2 className="h-4 w-4" />
@@ -172,7 +203,7 @@ function ComparePageContent() {
               </div>
 
               {/* Side-by-side cards — horizontal scroll on mobile */}
-              <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div ref={tableRef} className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
                 <div className="flex gap-4" style={{ minWidth: `${signals.length * 220}px` }}>
                   {signals.map((signal) => (
                     <motion.div

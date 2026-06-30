@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Info, AlertCircle, ArrowLeft } from "lucide-react";
+import { X, Info, AlertCircle, ArrowLeft, CheckCircle } from "lucide-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useDemoModeStore } from "@/store/useDemoModeStore";
 import { usePositionLimitStore } from "@/store/usePositionLimitStore";
@@ -11,8 +11,9 @@ import { SlippageWarning } from "@/components/SlippageWarning";
 import { usePriceFormat } from "@/hooks/usePriceFormat";
 import { validateTradeField } from "@/lib/tradeSchemas";
 import { useNetworkMismatch } from "@/components/NetworkMismatchBanner";
+import { GlossaryTerm } from "@/components/GlossaryTerm";
 
-type ModalStep = "input" | "review";
+type ModalStep = "input" | "review" | "optimistic";
 
 type OrderType = "LIMIT" | "MARKET";
 
@@ -57,6 +58,8 @@ export function TradeModal({
   const [touched, setTouched] = useState({ limitPrice: false, amount: false });
   // Slippage warning: shown when estimated slippage exceeds threshold
   const [slippageAcknowledged, setSlippageAcknowledged] = useState(false);
+  // Stores the failure message when on-chain confirmation fails after optimistic success
+  const [confirmError, setConfirmError] = useState<string | null>(null);
   const { isDemoMode } = useDemoModeStore();
   const { enabled: positionLimitEnabled, percentage: positionLimitPercentage } =
     usePositionLimitStore();
@@ -116,6 +119,7 @@ export function TradeModal({
       setStep("input");
       setTouched({ limitPrice: false, amount: false });
       setSlippageAcknowledged(false);
+      setConfirmError(null);
     }
   }, [open]);
 
@@ -157,12 +161,35 @@ export function TradeModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, step, disabled, onClose]);
 
+  // Preset buttons: set amount to N% of wallet balance divided by current price
+  const applyPreset = useCallback(
+    (pct: number) => {
+      if (!price) return;
+      const xlm = (walletBalance * pct) / 100 / price;
+      setAmount(xlm.toFixed(2));
+      setTouched((t) => ({ ...t, amount: true }));
+    },
+    [price, walletBalance]
+  );
+
   const handleConfirm = useCallback(async () => {
     if (disabled) return;
+    setConfirmError(null);
+    // Optimistic: immediately show success UI before on-chain confirmation
+    setStep("optimistic");
     setSubmitting(true);
-    await mockBuildTx({ type, price, amount, stopLoss, positionLimit });
-    setSubmitting(false);
-    onConfirm ? onConfirm({ amount, price, orderType: type }) : onClose();
+    try {
+      await mockBuildTx({ type, price, amount, stopLoss, positionLimit });
+      setSubmitting(false);
+      onConfirm ? onConfirm({ amount, price, orderType: type }) : onClose();
+    } catch (err) {
+      // Rollback: revert to review step and surface a distinct failure message
+      setSubmitting(false);
+      setStep("review");
+      setConfirmError(
+        (err as Error).message || "Transaction confirmation failed. Your order was not placed."
+      );
+    }
   }, [type, price, amount, stopLoss, positionLimit, onClose, onConfirm, disabled]);
 
   // Announce order-type changes to screen readers via live region
@@ -277,7 +304,30 @@ export function TradeModal({
               ))}
             </div>
 
-            {step === "input" ? (
+            {step === "optimistic" ? (
+              <div className="flex flex-col items-center gap-4 py-6 text-center">
+                <CheckCircle
+                  size={48}
+                  className="text-accent-market"
+                  aria-hidden="true"
+                />
+                <div>
+                  <p className="text-base font-semibold text-foreground">Order submitted!</p>
+                  <p className="mt-1 text-sm text-foreground-muted">
+                    Waiting for on-chain confirmation…
+                  </p>
+                </div>
+                {submitting && (
+                  <div
+                    className="h-1 w-32 overflow-hidden rounded-full bg-foreground/10"
+                    role="progressbar"
+                    aria-label="Confirming transaction"
+                  >
+                    <div className="h-full w-1/2 animate-pulse rounded-full bg-accent-market" />
+                  </div>
+                )}
+              </div>
+            ) : step === "input" ? (
               <>
                 <div
                   className="space-y-4"
@@ -355,6 +405,32 @@ export function TradeModal({
                         {amountError}
                       </p>
                     )}
+
+                    {/* Quick size presets */}
+                    <div
+                      className="mt-1.5 flex gap-1"
+                      role="group"
+                      aria-label="Quick size presets"
+                    >
+                      {([25, 50, 75, 100] as const).map((pct) => (
+                        <button
+                          key={pct}
+                          type="button"
+                          onClick={() => applyPreset(pct)}
+                          disabled={!price}
+                          aria-label={`Set amount to ${pct === 100 ? "maximum" : `${pct}%`} of wallet balance`}
+                          className={`flex-1 rounded-md py-1 text-xs font-medium transition-colors
+                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface
+                            ${
+                              !price
+                                ? "cursor-not-allowed bg-foreground/5 text-foreground-subtle"
+                                : "bg-foreground/10 text-foreground-muted hover:bg-foreground/20 hover:text-foreground"
+                            }`}
+                        >
+                          {pct === 100 ? "Max" : `${pct}%`}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Total (read-only) */}
@@ -425,7 +501,9 @@ export function TradeModal({
                   {/* Stop-loss slider */}
                   <div>
                     <div className="flex justify-between text-xs text-foreground-muted mb-1">
-                      <label htmlFor="stop-loss-slider">Stop-Loss</label>
+                      <label htmlFor="stop-loss-slider">
+                        <GlossaryTerm term="stop-loss">Stop-Loss</GlossaryTerm>
+                      </label>
                       <span className="text-accent-warning font-medium" aria-hidden="true">
                         -{stopLoss}%
                       </span>
@@ -525,6 +603,23 @@ export function TradeModal({
                   aria-label="Order review"
                   className="space-y-3"
                 >
+                  {/* Rollback error: shown when on-chain confirmation fails */}
+                  {confirmError && (
+                    <div
+                      role="alert"
+                      className="flex items-start gap-3 rounded-lg border border-accent-danger/40 bg-accent-danger/10 p-3 text-sm"
+                    >
+                      <AlertCircle
+                        className="mt-0.5 h-4 w-4 shrink-0 text-accent-danger"
+                        aria-hidden="true"
+                      />
+                      <div>
+                        <p className="font-medium text-accent-danger">Confirmation failed</p>
+                        <p className="mt-0.5 text-xs text-foreground-muted">{confirmError}</p>
+                      </div>
+                    </div>
+                  )}
+
                   <p className="text-xs text-foreground-muted mb-3">
                     Review your order before confirming. Use Back to edit.
                   </p>
@@ -550,7 +645,9 @@ export function TradeModal({
                       <span className="font-mono font-medium text-foreground">${total.toFixed(4)} USDC</span>
                     </div>
                     <div className="flex items-center justify-between px-3 py-2">
-                      <span className="text-foreground-muted">Stop-loss</span>
+                      <span className="text-foreground-muted">
+                        <GlossaryTerm term="stop-loss">Stop-loss</GlossaryTerm>
+                      </span>
                       <span className="font-mono font-medium text-accent-warning">-{stopLoss}%</span>
                     </div>
                   </div>
