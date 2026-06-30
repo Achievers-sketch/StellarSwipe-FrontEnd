@@ -1,3 +1,5 @@
+/** @jest-environment jsdom */
+
 import { render, screen } from "@testing-library/react";
 import { PortfolioAllocationChart } from "@/components/chart/PortfolioAllocationChart";
 import { usePortfolioStore } from "@/store/usePortfolioStore";
@@ -64,6 +66,6 @@ describe("PortfolioAllocationChart", () => {
     expect(screen.getByText(/Total value:/)).toBeTruthy();
     expect(screen.getByText("Stellar")).toBeTruthy();
     expect(screen.getByText("USD Coin")).toBeTruthy();
-    expect(screen.getByText("50.0%")).toBeTruthy();
+    expect(screen.getAllByText("50.0%")).toHaveLength(2);
   });
 });

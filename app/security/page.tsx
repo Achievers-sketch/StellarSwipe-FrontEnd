@@ -122,7 +122,19 @@ export default function SecuritySettingsPage() {
             </p>
           </CardHeader>
           <CardContent className="px-5 pb-5">
-            <AnalyticsConsentToggle />
+            <div className="space-y-4">
+              <AnalyticsConsentToggle />
+              <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                <p className="text-xs text-foreground-muted mb-2">
+                  Need a full account export for records or compliance requests?
+                </p>
+                <Button asChild size="sm" variant="outline" className="gap-1.5">
+                  <Link href="/security/data-export">
+                    Request Account Data Export <ChevronRight size={13} />
+                  </Link>
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
 

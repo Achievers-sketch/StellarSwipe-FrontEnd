@@ -15,6 +15,7 @@ import {
   Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { SignalCard } from "@/components/SignalCard";
 import { useBookmarkStore, useBookmarkHydrated, type BookmarkFolder } from "@/store/useBookmarkStore";
 import { useBookmarkActions } from "@/hooks/useBookmarkActions";
@@ -28,38 +29,29 @@ interface BookmarksPageProps {
 
 function BookmarksEmptyState() {
   return (
-    <div
-      role="status"
-      aria-label="No bookmarked signals yet"
-      className="flex flex-col items-center justify-center gap-5 rounded-3xl border border-white/10 bg-slate-950/80 px-6 py-16 text-center"
-    >
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5" aria-hidden="true">
-        <BookmarkX className="h-8 w-8 text-sky-400/80" />
-      </div>
-
-      <div className="max-w-sm">
-        <p className="text-lg font-semibold text-white">No bookmarks yet</p>
-        <p className="mt-1.5 text-sm text-foreground-muted">
-          Save signals from the main feed to build a short list here. You can organize
-          them into folders for different strategies.
-        </p>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-center gap-3">
+    <EmptyState
+      ariaLabel="No bookmarked signals yet"
+      title="No bookmarks yet"
+      description="Save signals from the main feed to build a short list here. You can organize them into folders for different strategies."
+      className="bg-slate-950/80 py-16"
+      icon={<BookmarkX className="h-8 w-8 text-sky-400/80" />}
+      action={
         <Button asChild size="sm" className="gap-2">
           <Link href="/app">
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
             Browse feed
           </Link>
         </Button>
+      }
+      secondaryAction={
         <Button asChild size="sm" variant="outline" className="gap-2">
           <Link href="/providers">
             <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
             Explore providers
           </Link>
         </Button>
-      </div>
-    </div>
+      }
+    />
   );
 }
 

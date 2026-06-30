@@ -1,6 +1,7 @@
 "use client"
 
 import dynamic from "next/dynamic"
+import { PnLShareCardGenerator } from "@/components/analytics/PnLShareCardGenerator"
 
 const PortfolioAllocationChart = dynamic(
   () => import("@/components/chart/PortfolioAllocationChart").then((mod) => ({ default: mod.PortfolioAllocationChart })),
@@ -35,6 +36,9 @@ export default function AnalyticsPage() {
         <PnLWidget />
         <div className="md:col-span-2">
           <PerformanceDashboard />
+        </div>
+        <div className="md:col-span-2">
+          <PnLShareCardGenerator />
         </div>
       </div>
     </div>

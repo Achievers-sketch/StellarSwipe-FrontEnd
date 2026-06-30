@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { usePortfolioStore } from "@/store/usePortfolioStore";
 import { cn } from "@/lib/utils";
 
@@ -104,9 +105,11 @@ export function PortfolioAllocationChart({
           <h2 className="text-base font-semibold text-foreground">Portfolio Allocation</h2>
         </CardHeader>
         <CardContent>
-          <div className="flex h-48 items-center justify-center">
-            <p className="text-sm text-muted-foreground">No portfolio data available</p>
-          </div>
+          <EmptyState
+            title="No portfolio data available"
+            description="Connect assets or complete a trade to populate allocation data."
+            className="h-48 rounded-xl bg-transparent py-6"
+          />
         </CardContent>
       </Card>
     );

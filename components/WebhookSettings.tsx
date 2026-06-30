@@ -5,6 +5,7 @@ import { useWebhookStore, type WebhookEventType } from "@/store/useWebhookStore"
 import { sendTestWebhook } from "@/services/webhookService";
 import { Button } from "@/components/ui/button";
 import { Trash2, Plus, Send, Copy } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const EVENT_OPTIONS: { value: WebhookEventType; label: string }[] = [
   { value: "new_signal", label: "New Signal" },
@@ -97,16 +98,18 @@ export function WebhookSettings() {
 
       {/* Webhook list */}
       {webhooks.length === 0 && (
-        <div className="rounded-lg border border-dashed bg-card p-4 text-center">
-          <p className="text-sm text-muted-foreground">No webhooks configured.</p>
-          <Button size="sm" variant="outline" className="mt-3 gap-1" disabled aria-describedby="webhook-test-disabled">
-            <Send size={12} />
-            Send test webhook
-          </Button>
-          <p id="webhook-test-disabled" className="mt-2 text-xs text-muted-foreground">
-            Add a webhook URL before sending a test payload.
-          </p>
-        </div>
+        <EmptyState
+          title="No webhooks configured"
+          description="Add a webhook URL before sending a test payload."
+          className="rounded-lg border-dashed bg-card py-8"
+          action={
+            <Button size="sm" variant="outline" className="gap-1" disabled aria-describedby="webhook-test-disabled">
+              <Send size={12} />
+              Send test webhook
+            </Button>
+          }
+          secondaryAction={<span id="webhook-test-disabled" className="text-xs text-muted-foreground">Waiting for a webhook URL</span>}
+        />
       )}
 
       {webhooks.map((wh) => (

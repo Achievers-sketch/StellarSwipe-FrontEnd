@@ -112,8 +112,13 @@ export function NotificationBell() {
 
               <ul className="max-h-64 overflow-y-auto divide-y" role="list">
                 {notifications.length === 0 ? (
-                  <li className="px-4 py-6 text-center text-sm text-muted-foreground">
-                    No notifications
+                  <li className="p-3">
+                    <EmptyState
+                      title="No notifications"
+                      description="You are all caught up. New alerts will appear here."
+                      className="rounded-xl bg-transparent py-8"
+                      contentClassName="max-w-xs"
+                    />
                   </li>
                 ) : (
                   notifications.map((n) => (
