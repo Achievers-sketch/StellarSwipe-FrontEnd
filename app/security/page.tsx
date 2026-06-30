@@ -12,6 +12,7 @@ import {
 import { bugBountyProgram } from "@/content/security";
 import { auditReports } from "@/content/audits";
 import { AnalyticsConsentToggle } from "@/components/AnalyticsConsentToggle";
+import { DataSaverToggle } from "@/components/DataSaverToggle";
 import { NotificationPermissionButton } from "@/components/NotificationPermissionButton";
 import { useNotificationPreference } from "@/hooks/useNotificationPreference";
 import { SettingsBreadcrumb } from "@/components/SettingsBreadcrumb";
@@ -135,6 +136,20 @@ export default function SecuritySettingsPage() {
                 </Button>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Data Usage */}
+        <Card>
+          <CardHeader>
+            <h2 className="text-sm font-semibold text-foreground">Data Usage</h2>
+            <p className="text-xs text-foreground-muted">
+              Reduce network and battery usage on limited or expensive
+              connections.
+            </p>
+          </CardHeader>
+          <CardContent className="px-5 pb-5">
+            <DataSaverToggle />
           </CardContent>
         </Card>
 
