@@ -11,6 +11,8 @@ import { SignalFeedFilters } from "@/components/SignalFeedFilters";
 import { SignalSortControls } from "@/components/SignalSortControls";
 import { SignalFilterBottomSheet } from "@/components/SignalFilterBottomSheet";
 import { PricePrecisionToggle } from "@/components/PricePrecisionToggle";
+import { FeedDensityToggle } from "@/components/FeedDensityToggle";
+import { useFeedDensityStore } from "@/store/useFeedDensityStore";
 import { ExpiredSignalBanner } from "@/components/ExpiredSignalBanner";
 import { useSignalFilterStore } from "@/store/useSignalFilterStore";
 import { useBookmarkStore } from "@/store/useBookmarkStore";
@@ -54,6 +56,7 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
     sortOrder,
     setProvider,
   } = useSignalFilterStore();
+  const density = useFeedDensityStore((s) => s.density);
   const bookmarkedIds = useBookmarkStore((state) => state.bookmarks);
   // #321: snoozed signals are hidden from the feed until their snooze elapses.
   const snoozedMap = useSnoozeStore((state) => state.snoozed);
@@ -296,8 +299,12 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
         <div className="flex flex-col items-end gap-2">
           {/* Sort controls — persistent across browsing */}
           <SignalSortControls />
-          {/* Price precision toggle */}
-          <PricePrecisionToggle />
+          <div className="flex items-center gap-2">
+            {/* Price precision toggle */}
+            <PricePrecisionToggle />
+            {/* Density toggle — persisted across sessions */}
+            <FeedDensityToggle />
+          </div>
           {/* #98: show consistent loading state */}
           <div className="text-right text-sm text-foreground-muted" aria-live="polite" aria-atomic="true">
             {isFetching && !allSignals.length
@@ -469,7 +476,12 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
                     tabIndex={0}
                     onClick={() => addView(signal.id)}
                     aria-label={`${signal.ticker} ${signal.action} signal, ${signal.confidence}% confidence${signal.provider ? `, provider ${signal.provider}` : ""}${signal.status ? `, status ${signal.status}` : ""}${isExpired ? ", expired" : ""}. Use arrow keys to navigate between signals.`}
-                    className="rounded-3xl border border-white/10 bg-slate-950/90 p-4 shadow-sm shadow-slate-950/20 transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 sm:p-6 mb-4 cursor-pointer"
+                    data-density={density}
+                    className={`rounded-3xl border border-white/10 bg-slate-950/90 shadow-sm shadow-slate-950/20 transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
+                      density === "compact"
+                        ? "p-2 sm:p-3 mb-2"
+                        : "p-4 sm:p-6 mb-4"
+                    }`}
                   >
                     {/* Expired banner — shown above content, clearly visible */}
                     {isExpired && (
@@ -482,7 +494,7 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
                       className={isExpired ? "opacity-60 pointer-events-none select-none" : ""}
                       aria-hidden={isExpired}
                     >
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between ${density === "compact" ? "gap-2" : "gap-4"}`}>
                         <div>
                           <p className="text-xs uppercase tracking-[0.3em] text-foreground-muted">
                             <time dateTime={signal.timestamp}>
@@ -525,7 +537,7 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
                           Confidence {signal.confidence}%
                         </div>
                       </div>
-                      <p className="mt-4 text-sm leading-6 text-foreground-muted">{signal.details}</p>
+                      <p className={`text-sm leading-6 text-foreground-muted ${density === "compact" ? "mt-2" : "mt-4"}`}>{signal.details}</p>
                     </div>
                   </article>
                 </div>
