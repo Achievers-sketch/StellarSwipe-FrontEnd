@@ -11,6 +11,7 @@ import { SlippageWarning } from "@/components/SlippageWarning";
 import { usePriceFormat } from "@/hooks/usePriceFormat";
 import { validateTradeField } from "@/lib/tradeSchemas";
 import { useNetworkMismatch } from "@/components/NetworkMismatchBanner";
+import { GlossaryTerm } from "@/components/GlossaryTerm";
 
 type ModalStep = "input" | "review" | "optimistic";
 
@@ -500,7 +501,9 @@ export function TradeModal({
                   {/* Stop-loss slider */}
                   <div>
                     <div className="flex justify-between text-xs text-foreground-muted mb-1">
-                      <label htmlFor="stop-loss-slider">Stop-Loss</label>
+                      <label htmlFor="stop-loss-slider">
+                        <GlossaryTerm term="stop-loss">Stop-Loss</GlossaryTerm>
+                      </label>
                       <span className="text-accent-warning font-medium" aria-hidden="true">
                         -{stopLoss}%
                       </span>
@@ -642,7 +645,9 @@ export function TradeModal({
                       <span className="font-mono font-medium text-foreground">${total.toFixed(4)} USDC</span>
                     </div>
                     <div className="flex items-center justify-between px-3 py-2">
-                      <span className="text-foreground-muted">Stop-loss</span>
+                      <span className="text-foreground-muted">
+                        <GlossaryTerm term="stop-loss">Stop-loss</GlossaryTerm>
+                      </span>
                       <span className="font-mono font-medium text-accent-warning">-{stopLoss}%</span>
                     </div>
                   </div>

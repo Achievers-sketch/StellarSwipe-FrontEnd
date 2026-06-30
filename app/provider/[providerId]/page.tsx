@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useProviderProfile, useProviderSignals } from "@/hooks/useProviderProfile";
-import { ArrowLeft, Loader2, TrendingUp, TrendingDown } from "lucide-react";
+import { ArrowLeft, Loader2, TrendingUp, TrendingDown, UserMinus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageTransition } from "@/components/PageTransition";
+import { UnfollowDialog } from "@/components/UnfollowDialog";
+import { useUnfollowDialog } from "@/hooks/useUnfollowDialog";
 
 const SIGNALS_PER_PAGE = 5;
 
@@ -17,6 +19,19 @@ export default function ProviderProfilePage() {
   const { data: provider, isLoading: providerLoading } = useProviderProfile(providerId);
   const { data: signals = [] } = useProviderSignals(providerId);
   const [currentPage, setCurrentPage] = useState(0);
+
+  // Follow state — in a real app this comes from a query/store
+  const [isFollowing, setIsFollowing] = useState(true);
+
+  // Open positions copied from this provider — in a real app fetched from portfolio store
+  const openCopiedPositions = signals.filter((s) => s.outcome === "PENDING").length;
+
+  const handleUnfollow = useCallback(() => {
+    setIsFollowing(false);
+  }, []);
+
+  const { dialogState, requestUnfollow, handleConfirm, handleCancel } =
+    useUnfollowDialog(handleUnfollow);
 
   const paginatedSignals = signals.slice(
     currentPage * SIGNALS_PER_PAGE,
@@ -69,9 +84,33 @@ export default function ProviderProfilePage() {
                 {provider.address.slice(0, 12)}...{provider.address.slice(-8)}
               </p>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-muted-foreground">Rank</p>
-              <p className="text-3xl font-bold text-green-600">#{provider.rank}</p>
+            <div className="flex flex-col items-end gap-2">
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Rank</p>
+                <p className="text-3xl font-bold text-green-600">#{provider.rank}</p>
+              </div>
+              {isFollowing ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-muted-foreground"
+                  onClick={() =>
+                    requestUnfollow(provider.name ?? provider.address, openCopiedPositions)
+                  }
+                  aria-label={`Unfollow ${provider.name ?? "this provider"}`}
+                >
+                  <UserMinus size={14} aria-hidden="true" />
+                  Unfollow
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={() => setIsFollowing(true)}
+                  aria-label={`Follow ${provider.name ?? "this provider"}`}
+                >
+                  Follow
+                </Button>
+              )}
             </div>
           </div>
 
@@ -210,6 +249,16 @@ export default function ProviderProfilePage() {
           )}
         </div>
       </main>
+
+      {/* Unfollow confirmation dialog */}
+      <UnfollowDialog
+        open={dialogState.isOpen}
+        onOpenChange={(open) => { if (!open) handleCancel(); }}
+        providerName={dialogState.providerName}
+        openPositionsCount={dialogState.openPositionsCount}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
     </PageTransition>
   );
 }

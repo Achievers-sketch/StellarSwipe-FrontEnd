@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Edit2, Save, Info } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { StopLossSlider } from "@/components/ui/stop-loss-slider";
+import { GlossaryTerm } from "@/components/GlossaryTerm";
 import { cn } from "@/lib/utils";
 import type { StopLossMode } from "@/hooks/useStopLoss";
 
@@ -84,8 +85,8 @@ export function PositionStopLossControl() {
     <section className="rounded-3xl border border-white/10 bg-card p-4 shadow-sm">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <p className="text-base font-semibold text-foreground">Stop-Loss Controls</p>
-          <p className="text-sm text-muted-foreground">View and adjust stop-loss levels for current open positions.</p>
+          <p className="text-base font-semibold text-foreground"><GlossaryTerm term="stop-loss">Stop-Loss</GlossaryTerm> Controls</p>
+          <p className="text-sm text-muted-foreground">View and adjust <GlossaryTerm term="stop-loss">stop-loss</GlossaryTerm> levels for current open positions.</p>
         </div>
         <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.2em] text-muted-foreground">
           {positions.length} open
