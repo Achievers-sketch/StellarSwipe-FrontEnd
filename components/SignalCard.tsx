@@ -30,10 +30,9 @@ import { TradeSkeleton } from "@/components/TradeSkeleton";
 import { TradeModal } from "@/components/TradeModal";
 import { SignalConflictNotice, type SignalConflictReason } from "@/components/SignalConflictNotice";
 import { cn } from "@/lib/utils";
-import { MiniChart } from "./chart/MiniChart";
-import { CandlestickChart } from "./chart/CandlestickChart";
-import { useChartStyleStore } from "@/store/useChartStyleStore";
-import { BarChart2, LineChart } from "lucide-react";
+import { SignalSparkline } from "./chart/SignalSparkline";
+import { useDataSaverStore } from "@/store/useDataSaverStore";
+import { shouldDisableDecorativeAnimation } from "@/lib/dataSaver";
 import { GlossaryTerm } from "@/components/GlossaryTerm";
 import { PremiumSignalBadge } from "@/components/PremiumSignalBadge";
 import { ProviderRatingBadge } from "@/components/ProviderRatingBadge";
@@ -138,7 +137,13 @@ export function SignalCard({
   const shouldReduceMotion = useReducedMotion();
   const { isDemoMode } = useDemoModeStore();
   const { isRTL: rtl } = useI18n();
-  const { chartStyle, setChartStyle } = useChartStyleStore();
+  const dataSaverEnabled = useDataSaverStore((s) => s.dataSaverEnabled);
+  // Data Saver (#408) skips decorative animations *in addition to* the existing
+  // prefers-reduced-motion handling.
+  const decorativeMotionDisabled = shouldDisableDecorativeAnimation(
+    shouldReduceMotion,
+    dataSaverEnabled
+  );
   const fmt = usePriceFormat();
   const { sensitivity, swapDirections } = useSwipeSettingsStore();
   const SWIPE_THRESHOLD = getEffectiveSwipeThreshold(sensitivity);
@@ -573,8 +578,8 @@ export function SignalCard({
               <div className="space-y-1">
                 <p className="text-muted-foreground text-xs">Live delta</p>
                 <motion.div
-                  animate={{ scale: flash ? 1.02 : 1 }}
-                  transition={{ duration: 0.2 }}
+                  animate={{ scale: flash && !decorativeMotionDisabled ? 1.02 : 1 }}
+                  transition={decorativeMotionDisabled ? { duration: 0 } : { duration: 0.2 }}
                   className={cn(
                     "inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold",
                     deltaPositive
@@ -599,20 +604,7 @@ export function SignalCard({
               ) : (
                 <Minus size={16} className="text-foreground-subtle" />
               )}
-              {chartStyle === "candlestick" ? (
-                <CandlestickChart data={roiHistory.map((p) => p.value)} className="flex-1" />
-              ) : (
-                <MiniChart data={roiHistory.map((p) => p.value)} className="flex-1" />
-              )}
-              <button
-                type="button"
-                onClick={() => setChartStyle(chartStyle === "line" ? "candlestick" : "line")}
-                aria-label={`Switch to ${chartStyle === "line" ? "candlestick" : "line"} chart`}
-                aria-pressed={chartStyle === "candlestick"}
-                className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              >
-                {chartStyle === "line" ? <BarChart2 size={14} aria-hidden="true" /> : <LineChart size={14} aria-hidden="true" />}
-              </button>
+              <SignalSparkline data={roiHistory.map((p) => p.value)} />
             </div>
 
             {/* ── Issue #102: Expandable detail section with smooth animation ── */}
@@ -627,7 +619,7 @@ export function SignalCard({
               <motion.span
                 animate={{ rotate: detailsExpanded ? 180 : 0 }}
                 transition={
-                  shouldReduceMotion
+                  decorativeMotionDisabled
                     ? { duration: 0 }
                     : { duration: 0.2, ease: "easeInOut" }
                 }
@@ -642,11 +634,11 @@ export function SignalCard({
                 <motion.div
                   id={`signal-details-${signalId}`}
                   key="signal-details"
-                  initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, height: 0 }}
-                  animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, height: "auto" }}
-                  exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
+                  initial={decorativeMotionDisabled ? { opacity: 1 } : { opacity: 0, height: 0 }}
+                  animate={decorativeMotionDisabled ? { opacity: 1 } : { opacity: 1, height: "auto" }}
+                  exit={decorativeMotionDisabled ? { opacity: 0 } : { opacity: 0, height: 0 }}
                   transition={
-                    shouldReduceMotion
+                    decorativeMotionDisabled
                       ? { duration: 0 }
                       : { duration: 0.28, ease: [0.4, 0, 0.2, 1] }
                   }

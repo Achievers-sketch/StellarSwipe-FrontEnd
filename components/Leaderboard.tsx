@@ -1,6 +1,8 @@
 import React from "react";
 import Image from "next/image";
 import { useLeaderboardStore, type LeaderboardEntry } from "../store/leaderboardStore";
+import { useDataSaverStore } from "../store/useDataSaverStore";
+import { getImageQuality } from "../lib/dataSaver";
 import { formatNumber } from "../lib/utils";
 
 const PERIOD_TABS: { value: "daily" | "weekly" | "monthly" | "yearly"; label: string }[] = [
@@ -12,6 +14,9 @@ const PERIOD_TABS: { value: "daily" | "weekly" | "monthly" | "yearly"; label: st
 
 export const Leaderboard: React.FC = () => {
   const { rankings, loading, error, fetchRankings, period, setPeriod, currentUserId } = useLeaderboardStore();
+  // #408: serve lower-quality avatars when Data Saver mode is enabled.
+  const dataSaverEnabled = useDataSaverStore((s) => s.dataSaverEnabled);
+  const imageQuality = getImageQuality(dataSaverEnabled);
 
   React.useEffect(() => {
     fetchRankings();
@@ -84,6 +89,7 @@ export const Leaderboard: React.FC = () => {
                   height={64}
                   className="w-16 h-16 rounded-full object-cover border-2 border-primary"
                   sizes="64px"
+                  quality={imageQuality}
                 />
                 <div className="flex-1">
                   <h2 className="text-xl font-semibold text-gray-800">
