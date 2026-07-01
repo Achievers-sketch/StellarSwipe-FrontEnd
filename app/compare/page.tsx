@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, Printer, GitCompare, Link as LinkIcon, Check, Download, Image as ImageIcon } from "lucide-react";
+import { Plus, Trash2, Printer, GitCompare, Link as LinkIcon, Check, Download, Image as ImageIcon, AlertCircle, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageTransition } from "@/components/PageTransition";
 import { useComparisonStore } from "@/store/useComparisonStore";
@@ -48,7 +48,7 @@ function computeBestValues(signals: ReturnType<typeof useComparisonStore.getStat
 }
 
 function ComparePageContent() {
-  const { signals, removeSignal, clearSignals, hiddenMetrics, toggleMetric, canAdd, addSignal } = useComparisonStore();
+  const { signals, removeSignal, clearSignals, hiddenMetrics, toggleMetric, canAdd, addSignal, limitReached, dismissLimitMessage } = useComparisonStore();
   const [addPanelOpen, setAddPanelOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [exportingImage, setExportingImage] = useState(false);
@@ -177,6 +177,35 @@ function ComparePageContent() {
                   </div>
                   <AddSignalPanel />
                 </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Limit-reached banner */}
+          <AnimatePresence>
+            {limitReached && (
+              <motion.div
+                key="limit-banner"
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                role="alert"
+                aria-live="polite"
+                className="flex items-center justify-between gap-3 mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300 print:hidden"
+              >
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span>
+                    You can compare up to {3} signals at once. Remove one to add another.
+                  </span>
+                </div>
+                <button
+                  onClick={dismissLimitMessage}
+                  aria-label="Dismiss"
+                  className="shrink-0 rounded p-0.5 hover:bg-amber-500/20 transition-colors"
+                >
+                  <XIcon className="h-4 w-4" />
+                </button>
               </motion.div>
             )}
           </AnimatePresence>

@@ -9,6 +9,7 @@ import { DevPerfOverlay } from "@/components/DevPerfOverlay";
 import { AnalyticsDebugConsole } from "@/components/AnalyticsDebugConsole";
 import { ScrollRestoration } from "@/components/ScrollRestoration";
 import { WebVitalsReporting } from "@/components/WebVitalsReporting";
+import { ComparisonTray } from "@/components/ComparisonTray";
 
 const inter = Inter({
   subsets: ["latin", "latin-ext"],
@@ -60,6 +61,7 @@ export default function RootLayout({
           <TradeStatusBanner />
           <DevPerfOverlay />
           <AnalyticsDebugConsole />
+          <ComparisonTray />
         </Providers>
       </body>
     </html>
