@@ -166,7 +166,7 @@ export function SignalCard({
   const tradeTintOpacity = useTransform(x, [0, TINT_THRESHOLD], [0, MAX_TINT_OPACITY]);
   const passTintOpacity = useTransform(x, [0, -TINT_THRESHOLD], [0, MAX_TINT_OPACITY]);
 
-  const { price, flash, relativeTime } = useSignalPrice(3000);
+  const { price, flash, relativeTime, stale } = useSignalPrice(3000);
   const signalId = signalIdProp ?? signalData?.id ?? pair ?? "signal-unknown";
   const signalPair = pair ?? `${signalData?.asset ?? "XLM"}/USDC`;
   const signalAction = signalData?.action ?? action;
@@ -592,7 +592,13 @@ export function SignalCard({
                 </motion.div>
               </div>
               <div className="text-right text-[11px] text-foreground-muted">
-                {relativeTime}
+                {stale ? (
+                  <span role="status" aria-live="polite" className="text-accent-warning">
+                    Price may be outdated
+                  </span>
+                ) : (
+                  relativeTime
+                )}
               </div>
             </div>
 
