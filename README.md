@@ -31,13 +31,14 @@ Connects to Soroban contracts for on-chain actions.
    git clone https://github.com/EndeMathew/StellarSwipe-frontend.git
    cd StellarSwipe-frontend
    npm install
+   ```
 
 Set environment variables (.env.local):
-    NEXT_PUBLIC_SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
-    NEXT_PUBLIC_HORIZON_URL=https://horizon-testnet.stellar.org
+NEXT_PUBLIC_SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
+NEXT_PUBLIC_HORIZON_URL=https://horizon-testnet.stellar.org
 
 Run dev server:
-  npm run dev
+npm run dev
 
 ### React Query Devtools
 
@@ -88,6 +89,7 @@ Stories are also used for **Chromatic visual regression** snapshots — any stor
 The CI bundle size check runs `ANALYZE=true npm run build` and compares output against `bundle-budget.json`.
 
 To raise a budget intentionally:
+
 1. Edit `bundle-budget.json` — increase `sizeKb` for the affected chunk.
 2. Add a comment in the PR description explaining the accepted regression.
 
@@ -104,16 +106,24 @@ Performance audits run automatically on every PR via Lighthouse CI (`lighthouser
 
 Budget thresholds (defined in `lighthouserc.js`):
 
-| Metric | Budget |
-|---|---|
-| Performance score | ≥ 0.70 |
-| LCP | ≤ 2500 ms |
-| CLS | ≤ 0.10 |
-| TBT | ≤ 300 ms |
+| Metric            | Budget    |
+| ----------------- | --------- |
+| Performance score | ≥ 0.70    |
+| LCP               | ≤ 2500 ms |
+| CLS               | ≤ 0.10    |
+| TBT               | ≤ 300 ms  |
 
 To adjust a budget: edit the `assertions` block in `lighthouserc.js` and document the reason in your PR.
 
 Lighthouse reports are uploaded as CI artifacts (`lighthouse-reports/`) for debugging failed runs.
+
+## Additional documentation
+
+Legacy implementation notes have been consolidated under `/docs` to reduce root clutter:
+
+- [`/docs/page-transitions/`](docs/page-transitions/) – page transition placeholder system docs
+- [`/docs/pull-to-refresh/`](docs/pull-to-refresh/) – pull-to-refresh gesture docs
+- [`/docs/project/`](docs/project/) – project-level implementation summaries and guidelines
 
 ## Worker Tracing
 
@@ -121,17 +131,19 @@ Asynchronous worker execution paths are instrumented via `src/tracing/worker-tra
 
 ### What is traced
 
-| Worker | Span name |
-|---|---|
-| `/api/signals` route handler | `worker:signals:fetch` |
-| Freighter wallet connect | `worker:wallet:connect` |
+| Worker                        | Span name                 |
+| ----------------------------- | ------------------------- |
+| `/api/signals` route handler  | `worker:signals:fetch`    |
+| Freighter wallet connect      | `worker:wallet:connect`   |
 | Signal price polling interval | `worker:signalPrice:poll` |
 
 ### API
 
 ```ts
 // Wrap any async function — returns its result, re-throws on error
-const data = await traceWorker("worker:my:task", async () => fetchData(), { page: 1 });
+const data = await traceWorker("worker:my:task", async () => fetchData(), {
+  page: 1,
+});
 
 // Manual span lifecycle
 const finish = startSpan("worker:my:task", { key: "value" });
@@ -158,4 +170,3 @@ In development (`NODE_ENV=development`) spans are logged to `console.debug`. Rep
 ```bash
 npm test
 ```
-
