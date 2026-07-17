@@ -3,6 +3,7 @@
 import { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import * as Sentry from "@sentry/nextjs";
 
 interface Props {
   children: ReactNode;
@@ -24,10 +25,14 @@ export class SignalFeedErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("[SignalFeedErrorBoundary] Signal feed crashed:", error);
-    if (errorInfo.componentStack) {
-      console.error("[SignalFeedErrorBoundary] Component stack:", errorInfo.componentStack);
-    }
+    Sentry.withScope((scope) => {
+      if (errorInfo.componentStack) {
+        scope.setContext("component_stack", {
+          componentStack: errorInfo.componentStack,
+        });
+      }
+      Sentry.captureException(error);
+    });
   }
 
   handleRetry = () => {

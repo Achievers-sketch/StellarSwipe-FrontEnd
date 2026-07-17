@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { traceWorker } from "@/src/tracing/worker-tracing.service";
+import * as Sentry from "@sentry/nextjs";
 
 export interface SignalPrice {
   executionPrice: number;
@@ -46,7 +47,7 @@ export function useSignalPrice(intervalMs = 3000) {
           prevRef.current = next;
           return next;
         });
-      }).catch(console.error);
+      }).catch((err) => Sentry.captureException(err));
     }, intervalMs);
     return () => clearInterval(id);
   }, [intervalMs]);

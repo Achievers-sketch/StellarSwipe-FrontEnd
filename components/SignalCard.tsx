@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import * as Sentry from "@sentry/nextjs";
 import {
   animate,
   motion,
@@ -348,7 +349,7 @@ export function SignalCard({
         text: shareText,
         url: shareUrl,
       }).catch((err) => {
-        if (err.name !== "AbortError") console.error("Share failed:", err);
+        if (err.name !== "AbortError") Sentry.captureException(err);
       });
     } else {
       const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;

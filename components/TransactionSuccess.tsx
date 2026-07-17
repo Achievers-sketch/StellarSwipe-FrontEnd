@@ -17,7 +17,6 @@ export function TransactionSuccess() {
 
   const handleViewPortfolio = useCallback(() => {
     clearSuccess();
-    console.log("Navigate to portfolio");
   }, [clearSuccess]);
 
   const handleContinueSwiping = useCallback(() => clearSuccess(), [clearSuccess]);

@@ -32,10 +32,9 @@ interface TradeModalProps {
   portfolioBalance?: number;
 }
 
-const mockBuildTx = (order: object) =>
+const mockBuildTx = (_order: object) =>
   new Promise<void>((res) =>
     setTimeout(() => {
-      console.log("tx built", order);
       res();
     }, 800)
   );

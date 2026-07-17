@@ -22,6 +22,7 @@ import { useQRPairing } from "@/hooks/useQRPairing";
 import { renderQRCode } from "@/lib/qrcode";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import * as Sentry from "@sentry/nextjs";
 
 interface QRPairingPanelProps {
   onSuccess: () => void;
@@ -52,7 +53,7 @@ export function QRPairingPanel({ onSuccess, onCancel }: QRPairingPanelProps) {
         lightColor: "#ffffff",
       });
     } catch (err) {
-      console.error("[QRPairingPanel] Failed to render QR code:", err);
+      Sentry.captureException(err);
     }
   }, [uri]);
 
