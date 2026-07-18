@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNotificationStore } from "@/store/useNotificationStore";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export function NotificationBell() {
   const notifications = useNotificationStore((s) => s.notifications);

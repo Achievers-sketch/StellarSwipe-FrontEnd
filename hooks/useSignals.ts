@@ -5,7 +5,7 @@ import { queryOptions } from "@/lib/queryOptions";
 export function useSignals() {
   return useQuery({
     queryKey: ["signals"],
-    queryFn: fetchSignals,
+    queryFn: () => fetchSignals(),
     ...queryOptions.signal,
     retry: (failureCount, error) => {
       if (error instanceof NetworkError && failureCount < 2) return true;

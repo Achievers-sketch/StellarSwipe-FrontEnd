@@ -135,7 +135,7 @@ describe("SignalFeed – pull-to-refresh integration", () => {
 
       // Simulate pulling down 80px (at threshold)
       const touchMove = new TouchEvent("touchmove", {
-        touches: [{ clientY: 180 }] as unknown as TouchList,
+        touches: [{ clientY: 180 }] as any,
         bubbles: true,
       } as TouchEventInit);
       feedContainer?.dispatchEvent(touchMove);
@@ -184,7 +184,7 @@ describe("SignalFeed – pull-to-refresh integration", () => {
       feedContainer?.dispatchEvent(touchStart);
 
       const touchMove = new TouchEvent("touchmove", {
-        touches: [{ clientY: 180 }] as unknown as TouchList,
+        touches: [{ clientY: 180 }] as any,
         bubbles: true,
       } as TouchEventInit);
       feedContainer?.dispatchEvent(touchMove);
@@ -206,7 +206,7 @@ describe("SignalFeed – pull-to-refresh integration", () => {
       feedContainer?.dispatchEvent(touchStart);
 
       const touchMove = new TouchEvent("touchmove", {
-        touches: [{ clientY: 180 }] as unknown as TouchList,
+        touches: [{ clientY: 180 }] as any,
         bubbles: true,
       } as TouchEventInit);
       feedContainer?.dispatchEvent(touchMove);
@@ -248,7 +248,7 @@ describe("SignalFeed – pull-to-refresh integration", () => {
 
       // Pull 40px (below threshold of 80px)
       const touchMove = new TouchEvent("touchmove", {
-        touches: [{ clientY: 140 }] as unknown as TouchList,
+        touches: [{ clientY: 140 }] as any,
         bubbles: true,
       } as TouchEventInit);
       feedContainer?.dispatchEvent(touchMove);
@@ -317,7 +317,7 @@ describe("SignalFeed – pull-to-refresh integration", () => {
       feedContainer?.dispatchEvent(touchStart);
 
       const touchMove = new TouchEvent("touchmove", {
-        touches: [{ clientY: 180 }] as unknown as TouchList,
+        touches: [{ clientY: 180 }] as any,
         bubbles: true,
       } as TouchEventInit);
       feedContainer?.dispatchEvent(touchMove);

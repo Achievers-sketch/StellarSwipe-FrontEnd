@@ -1,6 +1,6 @@
 import { computeRecommendations } from '../recommendationEngine';
 import { useRecommendationStore } from '@/store/useRecommendationStore';
-import type { Signal } from '@/lib/types';
+import type { Signal } from '@/lib/api-types.generated';
 
 // SEASONAL_BOOST mirrors the IIFE in recommendationEngine.ts so test
 // assertions stay correct regardless of when tests run.
@@ -10,13 +10,11 @@ const SEASONAL_BOOST = _month >= 9 || _month <= 2 ? 5 : 0;
 function sig(overrides: Partial<Signal> = {}): Signal {
   return {
     id: 'sig-default',
-    asset: 'XLM',
-    pair: 'XLM/USDC',
-    direction: 'BUY',
+    ticker: 'XLM',
+    action: 'BUY',
     confidence: 80,
-    price: '0.48',
     timestamp: new Date().toISOString(),
-    analysis: 'Test signal',
+    details: 'Test signal',
     ...overrides,
   };
 }
@@ -26,7 +24,7 @@ function setupStore(
     enabled: boolean;
     riskProfile: 'conservative' | 'moderate' | 'aggressive';
     privacyAccepted: boolean;
-    feedback: { signalId: string; liked: boolean; timestamp: string }[];
+    feedback: { signalId: string; liked: boolean; timestamp: string; source: 'explicit' | 'implicit' }[];
   }> = {}
 ) {
   useRecommendationStore.setState({
@@ -86,9 +84,9 @@ describe('computeRecommendations', () => {
   describe('asset preference scoring', () => {
     it('adds +15 to score for a previously liked asset', () => {
       setupStore({
-        feedback: [{ signalId: 'sig-A', liked: true, timestamp: '' }],
+        feedback: [{ signalId: 'sig-A', liked: true, timestamp: '', source: 'explicit' }],
       });
-      const signal = sig({ id: 'sig-A', asset: 'XLM', confidence: 65 });
+      const signal = sig({ id: 'sig-A', ticker: 'XLM', confidence: 65 });
       const [rec] = computeRecommendations([signal]);
 
       expect(rec.score).toBe(Math.min(100, 65 + 15 + SEASONAL_BOOST));
@@ -96,9 +94,9 @@ describe('computeRecommendations', () => {
 
     it('subtracts 20 from score for a previously disliked asset', () => {
       setupStore({
-        feedback: [{ signalId: 'sig-B', liked: false, timestamp: '' }],
+        feedback: [{ signalId: 'sig-B', liked: false, timestamp: '', source: 'explicit' }],
       });
-      const signal = sig({ id: 'sig-B', asset: 'XLM', confidence: 65 });
+      const signal = sig({ id: 'sig-B', ticker: 'XLM', confidence: 65 });
       const recs = computeRecommendations([signal]);
 
       const expectedScore = Math.min(100, Math.max(0, 65 - 20 + SEASONAL_BOOST));
@@ -111,9 +109,9 @@ describe('computeRecommendations', () => {
 
     it('mentions the liked asset in the recommendation reasons', () => {
       setupStore({
-        feedback: [{ signalId: 'sig-A', liked: true, timestamp: '' }],
+        feedback: [{ signalId: 'sig-A', liked: true, timestamp: '', source: 'explicit' }],
       });
-      const signal = sig({ id: 'sig-A', asset: 'XLM', confidence: 65 });
+      const signal = sig({ id: 'sig-A', ticker: 'XLM', confidence: 65 });
       const [rec] = computeRecommendations([signal]);
 
       expect(rec.reasons.some((r) => r.includes('XLM'))).toBe(true);
@@ -121,11 +119,11 @@ describe('computeRecommendations', () => {
 
     it('does not boost an asset that was only disliked in another signal', () => {
       setupStore({
-        feedback: [{ signalId: 'sig-other', liked: false, timestamp: '' }],
+        feedback: [{ signalId: 'sig-other', liked: false, timestamp: '', source: 'explicit' }],
       });
       // 'sig-other' doesn't appear in the signals array, so disliked asset is ''
       // The signal under test uses asset 'XLM' — no penalty expected
-      const signal = sig({ id: 'sig-A', asset: 'XLM', confidence: 65 });
+      const signal = sig({ id: 'sig-A', ticker: 'XLM', confidence: 65 });
       const [rec] = computeRecommendations([signal]);
 
       expect(rec.score).toBe(Math.min(100, 65 + SEASONAL_BOOST));
@@ -164,7 +162,7 @@ describe('computeRecommendations', () => {
     });
 
     it('adds a reason for bullish direction', () => {
-      const [rec] = computeRecommendations([sig({ direction: 'BUY' })]);
+      const [rec] = computeRecommendations([sig({ action: 'BUY' })]);
 
       expect(rec.reasons.some((r) => /bullish/i.test(r))).toBe(true);
     });
@@ -217,11 +215,11 @@ describe('computeRecommendations', () => {
     it('never produces a score above 100', () => {
       setupStore({
         riskProfile: 'aggressive',
-        feedback: [{ signalId: 'sig-cap', liked: true, timestamp: '' }],
+        feedback: [{ signalId: 'sig-cap', liked: true, timestamp: '', source: 'explicit' }],
       });
       // confidence 95 + liked +15 + aggressive +10 + seasonal — well over 100
       const [rec] = computeRecommendations([
-        sig({ id: 'sig-cap', asset: 'XLM', confidence: 95 }),
+        sig({ id: 'sig-cap', ticker: 'XLM', confidence: 95 }),
       ]);
 
       expect(rec.score).toBeLessThanOrEqual(100);
@@ -241,7 +239,7 @@ describe('computeRecommendations', () => {
       // SELL signal, moderate profile, no liked/disliked assets, score < 80
       // so no profile bonus, no BUY reason, no liked reason
       // Only seasonal reason might apply; if it doesn't, fallback is added
-      const signal = sig({ direction: 'SELL', confidence: 62, asset: 'BTC' });
+      const signal = sig({ action: 'SELL', confidence: 62, ticker: 'BTC' });
       const [rec] = computeRecommendations([signal]);
 
       if (rec.reasons.length === 1 && SEASONAL_BOOST === 0) {

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Signal } from "@/lib/api";
+import type { Signal } from "@/lib/api-types.generated";
 
 export const MAX_SIGNALS = 3;
 /** Alias used by the ComparisonTray component and its tests. */

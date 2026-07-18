@@ -3,7 +3,7 @@
 import { X, TrendingUp, TrendingDown, Bookmark, BookmarkCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { Signal } from "@/lib/api";
+import type { Signal } from "@/lib/api-types.generated";
 import { useBookmarkActions } from "@/hooks/useBookmarkActions";
 
 interface ComparisonCardProps {
@@ -28,10 +28,10 @@ export function ComparisonCard({ signal, onRemove, hiddenMetrics, bestValues }: 
 
   const metrics = [
     { key: "confidence", value: signal.confidence, display: `${signal.confidence}%`, higherIsBetter: true },
-    { key: "entryPrice", value: signal.stats?.entryPrice, display: signal.stats?.entryPrice != null ? `$${signal.stats.entryPrice.toFixed(4)}` : "—", higherIsBetter: false },
-    { key: "targetPrice", value: signal.stats?.targetPrice, display: signal.stats?.targetPrice != null ? `$${signal.stats.targetPrice.toFixed(4)}` : "—", higherIsBetter: true },
-    { key: "stopLoss", value: signal.stats?.stopLoss, display: signal.stats?.stopLoss != null ? `$${signal.stats.stopLoss.toFixed(4)}` : "—", higherIsBetter: false },
-    { key: "riskReward", value: signal.stats?.riskReward ? parseFloat(signal.stats.riskReward) : undefined, display: signal.stats?.riskReward ?? "—", higherIsBetter: true },
+    { key: "entryPrice", value: undefined, display: "—", higherIsBetter: false },
+    { key: "targetPrice", value: undefined, display: "—", higherIsBetter: true },
+    { key: "stopLoss", value: undefined, display: "—", higherIsBetter: false },
+    { key: "riskReward", value: undefined, display: "—", higherIsBetter: true },
   ];
 
   return (
@@ -46,7 +46,7 @@ export function ComparisonCard({ signal, onRemove, hiddenMetrics, bestValues }: 
               ) : (
                 <TrendingDown className="h-4 w-4 text-red-400" />
               )}
-              <span className="font-bold text-white text-lg">{signal.asset}</span>
+              <span className="font-bold text-white text-lg">{signal.ticker}</span>
             </div>
             <span className={cn("text-xs font-semibold px-1.5 py-0.5 rounded mt-1 inline-block", isBuy ? "text-green-400 bg-green-400/10" : "text-red-400 bg-red-400/10")}>
               {signal.action}
@@ -56,8 +56,8 @@ export function ComparisonCard({ signal, onRemove, hiddenMetrics, bestValues }: 
             <X className="h-4 w-4" />
           </Button>
         </div>
-        {signal.providerName && (
-          <p className="mt-2 text-xs text-gray-400 truncate">{signal.providerName}</p>
+        {signal.provider && (
+          <p className="mt-2 text-xs text-gray-400 truncate">{signal.provider}</p>
         )}
         <p className="text-xs text-gray-500 mt-1">{new Date(signal.timestamp).toLocaleDateString()}</p>
       </div>
@@ -80,10 +80,10 @@ export function ComparisonCard({ signal, onRemove, hiddenMetrics, bestValues }: 
       </div>
 
       {/* Rationale */}
-      {!hiddenMetrics.includes("rationale") && signal.rationale && (
+      {!hiddenMetrics.includes("rationale") && signal.details && (
         <div className="px-4 py-3 border-t border-white/5">
           <p className="text-xs text-gray-400 font-semibold mb-1">Rationale</p>
-          <p className="text-xs text-gray-300 line-clamp-3">{signal.rationale}</p>
+          <p className="text-xs text-gray-300 line-clamp-3">{signal.details}</p>
         </div>
       )}
 
@@ -94,7 +94,7 @@ export function ComparisonCard({ signal, onRemove, hiddenMetrics, bestValues }: 
           size="sm"
           onClick={() => {
             if (isBookmarked) {
-              removeBookmark(signal.id, signal.asset);
+              removeBookmark(signal.id, signal.ticker);
             } else {
               addBookmark(signal.id);
             }

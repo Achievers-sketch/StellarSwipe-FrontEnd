@@ -75,10 +75,10 @@ export function ComparisonTray() {
                 "pl-3 pr-1.5 py-1 text-sm font-medium"
               )}
             >
-              <span className="max-w-[140px] truncate">{signal.asset}</span>
+              <span className="max-w-[140px] truncate">{signal.ticker}</span>
               <button
                 type="button"
-                aria-label={`Remove ${signal.asset} from comparison`}
+                aria-label={`Remove ${signal.ticker} from comparison`}
                 onClick={() => removeSignal(signal.id)}
                 className={cn(
                   "rounded-full p-0.5",

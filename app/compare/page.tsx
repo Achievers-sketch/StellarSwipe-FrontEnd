@@ -37,10 +37,10 @@ function computeBestValues(signals: ReturnType<typeof useComparisonStore.getStat
 
   for (const s of signals) {
     update("confidence", s.confidence, true);
-    update("entryPrice", s.stats?.entryPrice, false);
-    update("targetPrice", s.stats?.targetPrice, true);
-    update("stopLoss", s.stats?.stopLoss, false);
-    const rr = s.stats?.riskReward ? parseFloat(s.stats.riskReward) : undefined;
+    update("entryPrice", undefined, false);
+    update("targetPrice", undefined, true);
+    update("stopLoss", undefined, false);
+    const rr = undefined;
     update("riskReward", rr, true);
   }
 
@@ -64,7 +64,7 @@ function ComparePageContent() {
     fetchSignals()
       .then((all) => {
         for (const id of idList) {
-          const found = all.find((s) => s.id === id);
+          const found = all.items.find((s) => s.id === id);
           if (found) addSignal(found);
         }
       })

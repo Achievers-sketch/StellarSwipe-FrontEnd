@@ -147,11 +147,11 @@ function snapshotListenersAndTimers(): ListenerTimerSnapshot {
       budget--;
 
       // Check for React-internal event handler tracking
-      const key = Object.keys(node as Record<string, unknown>).find(
+      const key = Object.keys(node as unknown as Record<string, unknown>).find(
         (k) => k.startsWith("__reactEventHandlers") || k.startsWith("__reactProps")
       );
       if (key) {
-        const handlers = (node as Record<string, unknown>)[key] as
+        const handlers = (node as unknown as Record<string, unknown>)[key] as
           | Record<string, unknown>
           | undefined;
         if (handlers) {
@@ -199,9 +199,9 @@ function patchIntervalsForDev(): void {
 
   const patchedSetInterval = ((handler: TimerHandler, timeout?: number, ...args: unknown[]) => {
     const id = origSetInterval(handler, timeout, ...args);
-    active.set(id, true);
+    active.set(id as any, true);
     activeIntervalCount = active.size;
-    return id;
+    return id as any;
   }) as typeof globalThis.setInterval;
 
   const patchedClearInterval = ((id: ReturnType<typeof setInterval> | undefined) => {
