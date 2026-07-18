@@ -4,16 +4,16 @@ import React, { useState } from 'react'
 
 const BASE_REFERRAL_URL = 'https://app.example.com/referral/ABC123'
 
-export const UTM_CHANNELS = [
+const UTM_CHANNELS = [
   { key: 'twitter',  label: 'Twitter',  source: 'twitter',  medium: 'social' },
   { key: 'telegram', label: 'Telegram', source: 'telegram', medium: 'social' },
   { key: 'whatsapp', label: 'WhatsApp', source: 'whatsapp', medium: 'messaging' },
   { key: 'email',    label: 'Email',    source: 'email',    medium: 'email' },
 ] as const
 
-export type ChannelKey = typeof UTM_CHANNELS[number]['key']
+type ChannelKey = typeof UTM_CHANNELS[number]['key']
 
-export function buildReferralLink(baseUrl: string, channel: ChannelKey): string {
+function buildReferralLink(baseUrl: string, channel: ChannelKey): string {
   const ch = UTM_CHANNELS.find((c) => c.key === channel)
   if (!ch) return baseUrl
   const params = new URLSearchParams({

@@ -92,9 +92,17 @@ export function useSignalPrice(
           prevRef.current = next;
           return next;
         });
-      }).catch((err) => Sentry.captureException(err));
-    }, intervalMs);
-    return () => clearInterval(id);
+      }).catch((err) => Sentry.captureException(err)).finally(() => {
+        if (!cancelled) schedule(intervalMs);
+      });
+    };
+
+    schedule(intervalMs);
+
+    return () => {
+      cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [intervalMs]);
 
   // Relative timestamp — refreshes every 60s
