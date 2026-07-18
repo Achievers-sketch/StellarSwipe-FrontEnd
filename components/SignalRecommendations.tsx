@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ThumbsUp, ThumbsDown, Sparkles } from "lucide-react";
 import { useRecommendationStore } from "@/store/useRecommendationStore";
 import { computeRecommendations, recordExplicitFeedback } from "@/services/recommendationEngine";
-import type { Signal } from "@/lib/types";
+import type { Signal } from "@/lib/api-types.generated";
 
 interface SignalRecommendationsProps {
   signals: Signal[];
@@ -62,16 +62,16 @@ export function SignalRecommendations({ signals, onSelectSignal }: SignalRecomme
               role="button"
               tabIndex={0}
               onKeyDown={(e) => e.key === "Enter" && onSelectSignal?.(signal)}
-              aria-label={`Recommended: ${signal.asset} ${signal.direction}`}
+              aria-label={`Recommended: ${signal.ticker} ${signal.action}`}
             >
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-sm">{signal.asset}</span>
+                <span className="font-semibold text-sm">{signal.ticker}</span>
                 <span
                   className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                    signal.direction === "BUY" ? "bg-green-500/20 text-green-500" : "bg-red-500/20 text-red-500"
+                    signal.action === "BUY" ? "bg-green-500/20 text-green-500" : "bg-red-500/20 text-red-500"
                   }`}
                 >
-                  {signal.direction}
+                  {signal.action}
                 </span>
               </div>
 

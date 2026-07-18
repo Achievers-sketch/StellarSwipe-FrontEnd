@@ -13,6 +13,7 @@ import { walletToast } from "@/lib/walletToast";
 import { traceWorker } from "@/src/tracing/worker-tracing.service";
 import analyticsService from "@/services/analytics";
 import type { WalletConnectErrorReason } from "@/components/WalletConnectErrorModal";
+import * as Sentry from "@sentry/nextjs";
 
 function isUserRejection(err: unknown): boolean {
   if (!(err instanceof Error)) return false;
@@ -83,7 +84,7 @@ export function useWallet() {
       } else {
         walletToast.connectError();
         setConnectError("error");
-        console.error(err);
+        Sentry.captureException(err);
         analyticsService.track('wallet_connect_failed', {
           wallet_type: 'freighter',
           reason: 'error',
@@ -111,7 +112,7 @@ export function useWallet() {
         throw err;
       }
       walletToast.signError();
-      console.error(err);
+      Sentry.captureException(err);
       throw err;
     } finally {
       setIsSigning(false);
@@ -141,7 +142,7 @@ export function useWallet() {
       } else {
         walletToast.connectError();
         setConnectError("error");
-        console.error(err);
+        Sentry.captureException(err);
       }
     } finally {
       setIsConnecting(false);

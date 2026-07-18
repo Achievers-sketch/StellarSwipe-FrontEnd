@@ -3,6 +3,7 @@
 import { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import * as Sentry from "@sentry/nextjs";
 
 interface Props {
   children: ReactNode;
@@ -21,7 +22,12 @@ export class ComparisonErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("[ComparisonErrorBoundary] Comparison tool crashed:", error, errorInfo.componentStack);
+    Sentry.withScope((scope) => {
+      scope.setContext("component_stack", {
+        componentStack: errorInfo.componentStack,
+      });
+      Sentry.captureException(error);
+    });
   }
 
   handleRetry = () => this.setState({ hasError: false, error: null });

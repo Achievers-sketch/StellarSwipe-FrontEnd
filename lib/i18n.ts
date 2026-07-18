@@ -1,6 +1,7 @@
 /**
  * Simple i18n system with JSON-based locale files
  */
+import * as Sentry from "@sentry/nextjs";
 
 export type Locale = 'en' | 'ng' | 'es' | 'fr' | 'de' | 'zh' | 'ar';
 
@@ -72,7 +73,7 @@ async function loadLocale(locale: Locale): Promise<Record<string, any>> {
     if (!response.ok) throw new Error(`Failed to load ${locale} locale`);
     return await response.json();
   } catch (err) {
-    console.error(`Error loading locale ${locale}:`, err);
+    Sentry.captureException(err);
     return {};
   }
 }
@@ -105,7 +106,10 @@ export async function initI18n() {
  */
 export async function setLocale(locale: Locale) {
   if (!SUPPORTED_LOCALES.includes(locale)) {
-    console.warn(`Unsupported locale: ${locale}`);
+    if (process.env.NODE_ENV === "development") {
+      // eslint-disable-next-line no-console
+      console.warn(`Unsupported locale: ${locale}`);
+    }
     return;
   }
 
@@ -135,6 +139,7 @@ export function t(key: string): string {
   value = getNestedValue(fallbackTranslations, key);
   if (value) {
     if (process.env.NODE_ENV === "development" && currentLocale !== DEFAULT_LOCALE) {
+      // eslint-disable-next-line no-console
       console.warn(
         `[i18n] Missing translation key "${key}" for locale "${currentLocale}". Falling back to "${DEFAULT_LOCALE}".`
       );
@@ -144,6 +149,7 @@ export function t(key: string): string {
 
   // Key missing from all locales
   if (process.env.NODE_ENV === "development") {
+    // eslint-disable-next-line no-console
     console.warn(
       `[i18n] Missing translation key "${key}" in locale "${currentLocale}" (no fallback found).`
     );

@@ -85,7 +85,10 @@ const analyticsService: AnalyticsService = {
     };
 
     scheduleNonBlocking(() => {
-      console.debug('Analytics Event:', event, properties);
+      if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.debug('Analytics Event:', event, properties);
+      }
       // Integration point: Replace with actual analytics provider
       // Example: segment.track(event, properties);
       // Or: mixpanel.track(event, properties);

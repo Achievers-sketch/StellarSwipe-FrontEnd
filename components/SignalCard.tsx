@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import * as Sentry from "@sentry/nextjs";
 import {
   animate,
   motion,
@@ -50,7 +51,7 @@ import {
 import { usePriceFormat } from "@/hooks/usePriceFormat";
 import { useSignalPrice } from "@/hooks/useSignalPrice";
 import { toast } from "@/lib/toast";
-import type { Signal as ApiSignal } from "@/lib/api";
+import type { Signal } from "@/lib/api-types.generated";
 
 interface ROIPoint {
   value: number;
@@ -58,7 +59,7 @@ interface ROIPoint {
 
 interface SignalCardProps {
   loading?: boolean;
-  signalData?: ApiSignal;
+  signalData?: Signal;
   pair?: string;
   executionPrice?: number;
   confidence?: number;
@@ -141,7 +142,7 @@ export function SignalCard({
   // Data Saver (#408) skips decorative animations *in addition to* the existing
   // prefers-reduced-motion handling.
   const decorativeMotionDisabled = shouldDisableDecorativeAnimation(
-    shouldReduceMotion,
+    shouldReduceMotion ?? false,
     dataSaverEnabled
   );
   const fmt = usePriceFormat();
@@ -168,14 +169,14 @@ export function SignalCard({
 
   const { price, flash, relativeTime, stale } = useSignalPrice(3000);
   const signalId = signalIdProp ?? signalData?.id ?? pair ?? "signal-unknown";
-  const signalPair = pair ?? `${signalData?.asset ?? "XLM"}/USDC`;
+  const signalPair = pair ?? `${signalData?.ticker ?? "XLM"}/USDC`;
   const signalAction = signalData?.action ?? action;
   const signalConfidence = signalData?.confidence ?? confidence;
   const signalTimestamp = signalData?.timestamp
     ? new Date(signalData.timestamp)
     : timestamp;
   const signalProvider =
-    providerName ?? signalData?.providerName ?? signalData?.providerId ?? signalData?.asset ?? "Provider";
+    providerName ?? signalData?.provider ?? signalData?.ticker ?? "Provider";
   const badgeSignal =
     signalAction === "BUY" ? "BUY" : signalAction === "SELL" ? "SELL" : "NEUTRAL";
 
@@ -348,7 +349,7 @@ export function SignalCard({
         text: shareText,
         url: shareUrl,
       }).catch((err) => {
-        if (err.name !== "AbortError") console.error("Share failed:", err);
+        if (err.name !== "AbortError") Sentry.captureException(err);
       });
     } else {
       const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;

@@ -173,7 +173,7 @@ export function CSVImportModal() {
   }, [mapping]);
 
   return (
-    <Dialog open={open} onOpenChange={(val) => { setOpen(val); if (!val) reset(); }}>
+    <Dialog open={open} onOpenChange={(val: boolean) => { setOpen(val); if (!val) reset(); }}>
       <DialogTrigger asChild>
         <Button variant="outline" className="gap-2">
           <Upload size={16} /> Import CSV
@@ -203,7 +203,7 @@ export function CSVImportModal() {
               <Upload className="h-12 w-12 text-slate-500 mb-4" />
               <h3 className="text-lg font-medium mb-1">Select your trading history file</h3>
               <p className="text-sm text-slate-400 mb-6 max-w-sm">
-                Upload a .csv file exported from your exchange or tracker. We'll help you map the columns.
+                Upload a .csv file exported from your exchange or tracker. We&apos;ll help you map the columns.
               </p>
               <input
                 type="file"

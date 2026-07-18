@@ -17,6 +17,8 @@ export function RecentlyViewedStrip() {
   const { data } = useInfiniteQuery<any>({
     queryKey: ["signals"],
     queryFn: () => Promise.resolve({ items: [] }), // This just access the existing query cache
+    initialPageParam: 1,
+    getNextPageParam: () => null,
     enabled: false,
   });
 

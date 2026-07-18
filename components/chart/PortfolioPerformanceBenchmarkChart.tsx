@@ -187,7 +187,7 @@ export function PortfolioPerformanceBenchmarkChart({
 
             {showBenchmark && (
               <text
-                x={chartData.width - 40}
+                x={(chartData?.width ?? 0) - 40}
                 y={15}
                 className="fill-blue-400 text-[10px]"
                 textAnchor="end"
@@ -196,7 +196,7 @@ export function PortfolioPerformanceBenchmarkChart({
               </text>
             )}
             <text
-              x={chartData.width - 40}
+              x={(chartData?.width ?? 0) - 40}
               y={showBenchmark ? 28 : 15}
               className="fill-green-400 text-[10px]"
               textAnchor="end"

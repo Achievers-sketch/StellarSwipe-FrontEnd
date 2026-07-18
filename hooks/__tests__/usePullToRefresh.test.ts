@@ -54,12 +54,12 @@ describe("usePullToRefresh – pull-to-refresh gesture detection", () => {
 
     act(() => {
       const touchStart = new TouchEvent("touchstart", {
-        touches: [{ clientY: 100 } as Touch],
+        touches: [{ clientY: 100 } as any],
       } as TouchEventInit);
       container.dispatchEvent(touchStart);
 
       const touchMove = new TouchEvent("touchmove", {
-        touches: [{ clientY: 150 }] as unknown as TouchList,
+        touches: [{ clientY: 150 } as any],
       } as TouchEventInit);
       container.dispatchEvent(touchMove);
     });
@@ -77,12 +77,12 @@ describe("usePullToRefresh – pull-to-refresh gesture detection", () => {
 
     act(() => {
       const touchStart = new TouchEvent("touchstart", {
-        touches: [{ clientY: 100 } as Touch],
+        touches: [{ clientY: 100 } as any],
       } as TouchEventInit);
       container.dispatchEvent(touchStart);
 
       const touchMove = new TouchEvent("touchmove", {
-        touches: [{ clientY: 150 }] as unknown as TouchList,
+        touches: [{ clientY: 150 } as any],
       } as TouchEventInit);
       container.dispatchEvent(touchMove);
     });
@@ -101,13 +101,13 @@ describe("usePullToRefresh – pull-to-refresh gesture detection", () => {
 
     act(() => {
       const touchStart = new TouchEvent("touchstart", {
-        touches: [{ clientY: 100 } as Touch],
+        touches: [{ clientY: 100 } as any],
       } as TouchEventInit);
       container.dispatchEvent(touchStart);
 
       // Pull 80px (at threshold) + 20px more (should be dampened)
       const touchMove = new TouchEvent("touchmove", {
-        touches: [{ clientY: 200 }] as unknown as TouchList,
+        touches: [{ clientY: 200 } as any],
       } as TouchEventInit);
       container.dispatchEvent(touchMove);
     });
@@ -130,19 +130,19 @@ describe("usePullToRefresh – pull-to-refresh gesture detection", () => {
 
     act(() => {
       const touchStart = new TouchEvent("touchstart", {
-        touches: [{ clientY: 100 } as Touch],
+        touches: [{ clientY: 100 } as any],
       } as TouchEventInit);
       container.dispatchEvent(touchStart);
 
       // Pull to threshold (80px)
       const touchMove = new TouchEvent("touchmove", {
-        touches: [{ clientY: 180 }] as unknown as TouchList,
+        touches: [{ clientY: 180 } as any],
       } as TouchEventInit);
       container.dispatchEvent(touchMove);
 
       // Release
       const touchEnd = new TouchEvent("touchend", {
-        touches: [] as unknown as TouchList,
+        touches: [] as any,
       } as TouchEventInit);
       container.dispatchEvent(touchEnd);
     });
@@ -165,19 +165,19 @@ describe("usePullToRefresh – pull-to-refresh gesture detection", () => {
 
     act(() => {
       const touchStart = new TouchEvent("touchstart", {
-        touches: [{ clientY: 100 } as Touch],
+        touches: [{ clientY: 100 } as any],
       } as TouchEventInit);
       container.dispatchEvent(touchStart);
 
       // Pull only 50px (below threshold)
       const touchMove = new TouchEvent("touchmove", {
-        touches: [{ clientY: 150 }] as unknown as TouchList,
+        touches: [{ clientY: 150 } as any],
       } as TouchEventInit);
       container.dispatchEvent(touchMove);
 
       // Release
       const touchEnd = new TouchEvent("touchend", {
-        touches: [] as unknown as TouchList,
+        touches: [] as any,
       } as TouchEventInit);
       container.dispatchEvent(touchEnd);
     });
@@ -204,17 +204,17 @@ describe("usePullToRefresh – pull-to-refresh gesture detection", () => {
     // First pull
     act(() => {
       const touchStart = new TouchEvent("touchstart", {
-        touches: [{ clientY: 100 } as Touch],
+        touches: [{ clientY: 100 } as any],
       } as TouchEventInit);
       container.dispatchEvent(touchStart);
 
       const touchMove = new TouchEvent("touchmove", {
-        touches: [{ clientY: 180 }] as unknown as TouchList,
+        touches: [{ clientY: 180 } as any],
       } as TouchEventInit);
       container.dispatchEvent(touchMove);
 
       const touchEnd = new TouchEvent("touchend", {
-        touches: [] as unknown as TouchList,
+        touches: [] as any,
       } as TouchEventInit);
       container.dispatchEvent(touchEnd);
     });
@@ -224,17 +224,17 @@ describe("usePullToRefresh – pull-to-refresh gesture detection", () => {
     // Try to pull again immediately (should be blocked)
     act(() => {
       const touchStart = new TouchEvent("touchstart", {
-        touches: [{ clientY: 100 } as Touch],
+        touches: [{ clientY: 100 } as any],
       } as TouchEventInit);
       container.dispatchEvent(touchStart);
 
       const touchMove = new TouchEvent("touchmove", {
-        touches: [{ clientY: 180 }] as unknown as TouchList,
+        touches: [{ clientY: 180 } as any],
       } as TouchEventInit);
       container.dispatchEvent(touchMove);
 
       const touchEnd = new TouchEvent("touchend", {
-        touches: [] as unknown as TouchList,
+        touches: [] as any,
       } as TouchEventInit);
       container.dispatchEvent(touchEnd);
     });
@@ -269,12 +269,12 @@ describe("usePullToRefresh – pull-to-refresh gesture detection", () => {
 
     act(() => {
       const touchStart = new TouchEvent("touchstart", {
-        touches: [{ clientY: 100 } as Touch],
+        touches: [{ clientY: 100 } as any],
       } as TouchEventInit);
       container.dispatchEvent(touchStart);
 
       const touchMove = new TouchEvent("touchmove", {
-        touches: [{ clientY: 150 }] as unknown as TouchList,
+        touches: [{ clientY: 150 } as any],
       } as TouchEventInit);
       container.dispatchEvent(touchMove);
     });
@@ -294,19 +294,19 @@ describe("usePullToRefresh – pull-to-refresh gesture detection", () => {
 
     act(() => {
       const touchStart = new TouchEvent("touchstart", {
-        touches: [{ clientY: 100 } as Touch],
+        touches: [{ clientY: 100 } as any],
       } as TouchEventInit);
       container.dispatchEvent(touchStart);
 
       const touchMove = new TouchEvent("touchmove", {
-        touches: [{ clientY: 150 }] as unknown as TouchList,
+        touches: [{ clientY: 150 } as any],
       } as TouchEventInit);
       container.dispatchEvent(touchMove);
 
       expect(result.current.pullDistance).toBe(50);
 
       const touchEnd = new TouchEvent("touchend", {
-        touches: [] as unknown as TouchList,
+        touches: [] as any,
       } as TouchEventInit);
       container.dispatchEvent(touchEnd);
     });
@@ -317,7 +317,7 @@ describe("usePullToRefresh – pull-to-refresh gesture detection", () => {
   it("handles async refresh callback", async () => {
     jest.useFakeTimers();
     const onRefresh = jest.fn(() =>
-      new Promise((resolve) => setTimeout(resolve, 100))
+      new Promise<void>((resolve) => setTimeout(resolve, 100))
     );
 
     const { result } = renderHook(() =>
@@ -330,17 +330,17 @@ describe("usePullToRefresh – pull-to-refresh gesture detection", () => {
 
     act(() => {
       const touchStart = new TouchEvent("touchstart", {
-        touches: [{ clientY: 100 } as Touch],
+        touches: [{ clientY: 100 } as any],
       } as TouchEventInit);
       container.dispatchEvent(touchStart);
 
       const touchMove = new TouchEvent("touchmove", {
-        touches: [{ clientY: 180 }] as unknown as TouchList,
+        touches: [{ clientY: 180 } as any],
       } as TouchEventInit);
       container.dispatchEvent(touchMove);
 
       const touchEnd = new TouchEvent("touchend", {
-        touches: [] as unknown as TouchList,
+        touches: [] as any,
       } as TouchEventInit);
       container.dispatchEvent(touchEnd);
     });

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { traceWorker } from "@/src/tracing/worker-tracing.service";
+import * as Sentry from "@sentry/nextjs";
 
 export interface SignalPrice {
   executionPrice: number;
@@ -81,40 +82,26 @@ export function useSignalPrice(
       if (cancelled) return;
 
       traceWorker("worker:signalPrice:poll", async () => {
-        const prev = prevRef.current;
-        const next = await Promise.resolve(fetchPriceRef.current(prev));
-        if (cancelled) return;
-
-        const dir =
-          next.executionPrice > prev.executionPrice
-            ? "up"
-            : next.executionPrice < prev.executionPrice
-              ? "down"
-              : null;
-        if (dir) {
-          setFlash(dir);
-          setTimeout(() => {
-            if (!cancelled) setFlash(null);
-          }, 900);
-        }
-        prevRef.current = next;
-        setPrice(next);
-        consecutiveFailures = 0;
-        setStale(false);
-        schedule(intervalMs);
-      }).catch((err) => {
-        console.error(err);
-        if (cancelled) return;
-        consecutiveFailures += 1;
-        setStale(true);
-        schedule(computePollDelayMs(intervalMs, consecutiveFailures));
+        setPrice((prev) => {
+          const next = mockFetchPrice(prev);
+          const dir = next.executionPrice > prev.executionPrice ? "up" : next.executionPrice < prev.executionPrice ? "down" : null;
+          if (dir) {
+            setFlash(dir);
+            setTimeout(() => setFlash(null), 900);
+          }
+          prevRef.current = next;
+          return next;
+        });
+      }).catch((err) => Sentry.captureException(err)).finally(() => {
+        if (!cancelled) schedule(intervalMs);
       });
     };
 
     schedule(intervalMs);
+
     return () => {
       cancelled = true;
-      if (timeoutId !== undefined) clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, [intervalMs]);
 

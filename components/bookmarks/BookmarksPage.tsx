@@ -322,7 +322,8 @@ export function BookmarksPage({ initialSignals }: BookmarksPageProps) {
   };
 
   const handleDeleteFolder = (folderId: string) => {
-    deleteFolder(folderId);
+    const folder = folders.find((f) => f.id === folderId);
+    deleteFolder(folderId, folder?.name ?? "Unknown");
     if (selectedFolderId === folderId) {
       setSelectedFolderId(null);
     }

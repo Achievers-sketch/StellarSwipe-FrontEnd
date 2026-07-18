@@ -40,8 +40,6 @@ export function StakeBadge({
   const resolvedTrustScore = profileData?.trustScore;
   const resolvedWinRate = profileData?.winRate;
 
-  if (!resolvedStake && !resolvedReputation) return null;
-
   const isLowStake =
     resolvedStakeXlm !== undefined &&
     resolvedStakeXlm <= minStakeXlm * (1 + warningMargin);
@@ -97,6 +95,8 @@ export function StakeBadge({
       document.removeEventListener("pointerdown", onPointerDown);
     };
   }, [popoverOpen]);
+
+  if (!resolvedStake && !resolvedReputation) return null;
 
   if (isLowStake) {
     const warningDescription =
@@ -206,7 +206,7 @@ const BreakdownPopover = ({
   winRate,
   tierLabel,
   ref,
-}: BreakdownPopoverProps & { ref: React.RefObject<HTMLDivElement | null> }) => (
+}: BreakdownPopoverProps & { ref: React.Ref<HTMLDivElement> }) => (
   <div
     id={id}
     ref={ref}

@@ -12,18 +12,15 @@
  */
 
 import { useComparisonStore, MAX_SIGNALS } from "@/store/useComparisonStore";
-import type { Signal } from "@/lib/api";
+import type { Signal } from "@/lib/api-types.generated";
 
 // ---------------------------------------------------------------------------
 // Minimal Signal factory
 // ---------------------------------------------------------------------------
-function makeSignal(id: string, asset = "XLM"): Signal {
+function makeSignal(id: string, ticker = "XLM"): Signal {
   return {
     id,
-    asset,
-    action: "BUY",
-    confidence: 75,
-    ticker: asset,
+    ticker,
     details: "",
     timestamp: "2024-01-01T00:00:00Z",
   } as Signal;
@@ -52,7 +49,7 @@ describe("addSignal – happy path", () => {
     useComparisonStore.getState().addSignal(makeSignal("s1", "AQUA"));
     const { signals } = useComparisonStore.getState();
     expect(signals[0].id).toBe("s1");
-    expect(signals[0].asset).toBe("AQUA");
+    expect(signals[0].ticker).toBe("AQUA");
   });
 
   it("clears limitReached when adding successfully", () => {

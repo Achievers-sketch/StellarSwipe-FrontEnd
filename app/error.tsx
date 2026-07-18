@@ -17,7 +17,6 @@ export default function Error({
   const [sentryEventId, setSentryEventId] = useState<string | null>(null);
 
   useEffect(() => {
-    console.error("[Route Error] Route-level error:", error);
     Sentry.captureException(error);
     setSentryEventId(Sentry.lastEventId() ?? null);
   }, [error]);

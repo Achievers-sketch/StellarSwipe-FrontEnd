@@ -515,43 +515,14 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
               next?.focus();
             }}
           >
-            {virtualizer.getVirtualItems().map((virtualRow) => {
-              const signal = signals[virtualRow.index];
-              const isExpired =
-                !!signal.expiresAt && new Date(signal.expiresAt) < new Date();
-
-              return (
-                <div
-                  key={virtualRow.key}
-                  data-index={virtualRow.index}
-                  ref={virtualizer.measureElement}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  <article
-                    tabIndex={0}
-                    onClick={() => addView(signal.id)}
-                    aria-label={`${signal.ticker} ${signal.action} signal, ${signal.confidence}% confidence${signal.provider ? `, provider ${signal.provider}` : ""}${signal.status ? `, status ${signal.status}` : ""}${isExpired ? ", expired" : ""}. Use arrow keys to navigate between signals.`}
-                    data-density={density}
-                    className={`rounded-3xl border border-white/10 bg-slate-950/90 shadow-sm shadow-slate-950/20 transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
-                      density === "compact"
-                        ? "p-2 sm:p-3 mb-2"
-                        : "p-4 sm:p-6 mb-4"
-                    }`}
-                  >
-                    {/* Expired banner — shown above content, clearly visible */}
-                    {isExpired && (
-                      <div className="mb-3">
-                        <ExpiredSignalBanner onRefresh={() => refetch()} />
-                      </div>
-                    )}
-
-            {!isLoading && !isError && signals.length === 0 && (
+            {isLoading ? (
+              <div className="space-y-4" role="status" aria-label="Loading signal feed" aria-live="polite">
+                <span className="sr-only">Loading signal feed…</span>
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <SignalCardSkeleton key={index} />
+                ))}
+              </div>
+            ) : !isError && signals.length === 0 ? (
               <SignalEmptyState
                 variant={
                   direction !== "ALL" ||
@@ -564,15 +535,6 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
                 }
                 onRefresh={() => refetch()}
               />
-            )}
-
-            {isLoading ? (
-              <div className="space-y-4" role="status" aria-label="Loading signal feed" aria-live="polite">
-                <span className="sr-only">Loading signal feed…</span>
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <SignalCardSkeleton key={index} />
-                ))}
-              </div>
             ) : (
               <div
                 style={{
@@ -585,7 +547,6 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
                   const signal = signals[virtualRow.index];
                   const isExpired =
                     !!signal.expiresAt && new Date(signal.expiresAt) < new Date();
-                  const isSelected = selectedSignalId === signal.id;
 
                   return (
                     <div
@@ -600,39 +561,23 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
                         transform: `translateY(${virtualRow.start}px)`,
                       }}
                     >
-                      <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between ${density === "compact" ? "gap-2" : "gap-4"}`}>
-                        <div>
-                          <p className="text-xs uppercase tracking-[0.3em] text-foreground-muted">
-                            <time dateTime={signal.timestamp}>
-                              <RelativeTimestamp timestamp={new Date(signal.timestamp)} />
-                            </time>
-                          </p>
-                          <h3 className="mt-2 text-base font-semibold tracking-tight text-white sm:text-xl">
-                            {signal.ticker} • {signal.action}
-                          </h3>
-                          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                            {signal.provider && (
-                              <span
-                                className="inline-flex items-center rounded-md bg-sky-500/10 px-2 py-0.5 text-[11px] font-medium text-sky-300 ring-1 ring-inset ring-sky-500/20"
-                                aria-label={`Provider: ${signal.provider}`}
-                              >
-                                {signal.provider}
-                              </span>
-                            )}
-                            {signal.status && (
-                              <span
-                                className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${
-                                  signal.status === "Active"
-                                    ? "bg-emerald-500/10 text-emerald-300 ring-emerald-500/20"
-                                    : signal.status === "Waiting"
-                                    ? "bg-amber-500/10 text-amber-300 ring-amber-500/20"
-                                    : "bg-slate-500/10 text-slate-400 ring-slate-500/20"
-                                }`}
-                                aria-label={`Status: ${signal.status}`}
-                              >
-                                {signal.status}
-                              </span>
-                            )}
+                      <article
+                        tabIndex={0}
+                        onClick={() => {
+                          addView(signal.id);
+                          setSelectedSignalId(signal.id);
+                        }}
+                        aria-label={`${signal.ticker} ${signal.action} signal, ${signal.confidence}% confidence${signal.provider ? `, provider ${signal.provider}` : ""}${signal.status ? `, status ${signal.status}` : ""}${isExpired ? ", expired" : ""}. Use arrow keys to navigate between signals.`}
+                        data-density={density}
+                        className={`rounded-3xl border border-white/10 bg-slate-950/90 shadow-sm shadow-slate-950/20 transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
+                          density === "compact"
+                            ? "p-2 sm:p-3 mb-2"
+                            : "p-4 sm:p-6 mb-4"
+                        }`}
+                      >
+                        {isExpired && (
+                          <div className="mb-3">
+                            <ExpiredSignalBanner onRefresh={() => refetch()} />
                           </div>
                         )}
 
@@ -640,7 +585,7 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
                           className={isExpired ? "opacity-60 pointer-events-none select-none" : ""}
                           aria-hidden={isExpired}
                         >
-                          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                          <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between ${density === "compact" ? "gap-2" : "gap-4"}`}>
                             <div>
                               <p className="text-xs uppercase tracking-[0.3em] text-foreground-muted">
                                 <time dateTime={signal.timestamp}>
@@ -682,10 +627,9 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
                               Confidence {signal.confidence}%
                             </div>
                           </div>
-                          <p className="mt-4 text-sm leading-6 text-foreground-muted">{signal.details}</p>
+                          <p className={`text-sm leading-6 text-foreground-muted ${density === "compact" ? "mt-2" : "mt-4"}`}>{signal.details}</p>
                         </div>
-                      </div>
-                      <p className={`text-sm leading-6 text-foreground-muted ${density === "compact" ? "mt-2" : "mt-4"}`}>{signal.details}</p>
+                      </article>
                     </div>
                   );
                 })}
@@ -698,11 +642,6 @@ export function SignalFeed({ initialData }: SignalFeedProps = {}) {
               </div>
             )}
 
-            <div
-              ref={sentinelRef}
-              className="h-1 w-full"
-              aria-hidden="true"
-            />
           </div>
 
           <div className="mt-6 flex flex-col items-center gap-4">

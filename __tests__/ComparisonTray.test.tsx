@@ -4,7 +4,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ComparisonTray } from "@/components/ComparisonTray";
 import { useComparisonStore, MAX_COMPARISON } from "@/store/useComparisonStore";
-import type { Signal } from "@/lib/api";
+import type { Signal } from "@/lib/api-types.generated";
 
 // Framer Motion animates exit transitions, keeping elements in the DOM while
 // fading out. Replace AnimatePresence and motion.* with synchronous pass-through

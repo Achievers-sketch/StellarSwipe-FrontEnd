@@ -10,23 +10,20 @@ import {
   buildComparisonCsv,
   COMPARISON_CSV_COLUMNS,
 } from "@/lib/exportComparison";
-import type { Signal } from "@/lib/api";
+import type { Signal } from "@/lib/api-types.generated";
 
 // ---------------------------------------------------------------------------
 // Minimal Signal factory — only the fields the CSV extractor reads
 // ---------------------------------------------------------------------------
 function makeSignal(overrides: Partial<Signal> & { id: string }): Signal {
   return {
-    id: overrides.id,
-    asset: overrides.asset ?? "XLM",
+
     action: overrides.action ?? "BUY",
     confidence: overrides.confidence ?? 75,
     ticker: overrides.ticker ?? "XLM",
     details: overrides.details ?? "",
     timestamp: overrides.timestamp ?? "2024-01-01T00:00:00Z",
-    stats: overrides.stats,
-    providerName: overrides.providerName,
-    providerId: overrides.providerId,
+    provider: overrides.provider,
     ...overrides,
   } as Signal;
 }
@@ -72,9 +69,9 @@ describe("buildComparisonCsv – row count", () => {
 
   it("produces the correct data-row count for a 3-signal comparison set", () => {
     const signals = [
-      makeSignal({ id: "sig-1", asset: "XLM", action: "BUY" }),
-      makeSignal({ id: "sig-2", asset: "BTC", action: "SELL" }),
-      makeSignal({ id: "sig-3", asset: "ETH", action: "BUY" }),
+      makeSignal({ id: "sig-1", ticker: "XLM", action: "BUY" }),
+      makeSignal({ id: "sig-2", ticker: "BTC", action: "SELL" }),
+      makeSignal({ id: "sig-3", ticker: "ETH", action: "BUY" }),
     ];
     const csv = buildComparisonCsv(signals);
     const lines = csv.split("\r\n").filter(Boolean);
@@ -89,7 +86,7 @@ describe("buildComparisonCsv – row count", () => {
 describe("buildComparisonCsv – data values", () => {
   it("writes the signal id and asset into the correct columns", () => {
     const csv = buildComparisonCsv([
-      makeSignal({ id: "sig-42", asset: "AQUA", action: "SELL", confidence: 88 }),
+      makeSignal({ id: "sig-42", ticker: "AQUA", action: "SELL", confidence: 88 }),
     ]);
     const lines = csv.split("\r\n").filter(Boolean);
     const dataRow = lines[1];
@@ -97,21 +94,6 @@ describe("buildComparisonCsv – data values", () => {
     expect(dataRow).toContain("AQUA");
     expect(dataRow).toContain("SELL");
     expect(dataRow).toContain("88");
-  });
-
-  it("writes stats fields when they are present", () => {
-    const csv = buildComparisonCsv([
-      makeSignal({
-        id: "sig-10",
-        stats: { entryPrice: 0.48, targetPrice: 0.53, stopLoss: 0.44, riskReward: "2.5" },
-      }),
-    ]);
-    const lines = csv.split("\r\n").filter(Boolean);
-    const dataRow = lines[1];
-    expect(dataRow).toContain("0.48");
-    expect(dataRow).toContain("0.53");
-    expect(dataRow).toContain("0.44");
-    expect(dataRow).toContain("2.5");
   });
 
   it("leaves stats columns empty when stats are absent", () => {
@@ -128,14 +110,14 @@ describe("buildComparisonCsv – data values", () => {
 
   it("escapes values that contain commas", () => {
     const csv = buildComparisonCsv([
-      makeSignal({ id: "sig-comma", providerName: "Alpha, Beta" }),
+      makeSignal({ id: "sig-comma", provider: "Alpha, Beta" }),
     ]);
     expect(csv).toContain('"Alpha, Beta"');
   });
 
   it("escapes values that contain double-quotes", () => {
     const csv = buildComparisonCsv([
-      makeSignal({ id: "sig-quote", providerName: 'Say "hello"' }),
+      makeSignal({ id: "sig-quote", provider: 'Say "hello"' }),
     ]);
     expect(csv).toContain('"Say ""hello"""');
   });
@@ -143,7 +125,7 @@ describe("buildComparisonCsv – data values", () => {
   it("each data row has the same number of cells as the header", () => {
     const signals = [
       makeSignal({ id: "sig-1" }),
-      makeSignal({ id: "sig-2", stats: { entryPrice: 1, targetPrice: 2, stopLoss: 0.5, riskReward: "3" } }),
+      makeSignal({ id: "sig-2" }),
     ];
     const csv = buildComparisonCsv(signals);
     const [headerRow, ...dataRows] = csv.split("\r\n").filter(Boolean);

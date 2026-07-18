@@ -234,7 +234,7 @@ describe("TradeModal – order-type toggle affects required fields", () => {
 
 // ── Two-step review flow ──────────────────────────────────────────────────────
 
-type ModalStep = "input" | "review";
+type ModalStep = "input" | "review" | "optimistic";
 
 /**
  * Simulates the step-machine logic extracted from TradeModal:

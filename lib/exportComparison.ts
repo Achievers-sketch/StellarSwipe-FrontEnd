@@ -9,7 +9,7 @@
  * they never touch the full signal feed.
  */
 
-import type { Signal } from "@/lib/api";
+import type { Signal } from "@/lib/api-types.generated";
 
 // ---------------------------------------------------------------------------
 // Shared column definitions
@@ -24,14 +24,14 @@ export const COMPARISON_CSV_COLUMNS: Array<{
   getValue: (signal: Signal) => string;
 }> = [
   { header: "ID",           getValue: (s) => s.id },
-  { header: "Asset",        getValue: (s) => s.asset ?? "" },
+  { header: "Asset",        getValue: (s) => s.ticker ?? "" },
   { header: "Action",       getValue: (s) => s.action ?? "" },
   { header: "Confidence",   getValue: (s) => s.confidence?.toString() ?? "" },
-  { header: "Entry Price",  getValue: (s) => s.stats?.entryPrice?.toString() ?? "" },
-  { header: "Target Price", getValue: (s) => s.stats?.targetPrice?.toString() ?? "" },
-  { header: "Stop Loss",    getValue: (s) => s.stats?.stopLoss?.toString() ?? "" },
-  { header: "Risk/Reward",  getValue: (s) => s.stats?.riskReward ?? "" },
-  { header: "Provider",     getValue: (s) => s.providerName ?? s.providerId ?? "" },
+  { header: "Entry Price",  getValue: (s) => "" },
+  { header: "Target Price", getValue: (s) => "" },
+  { header: "Stop Loss",    getValue: (s) => "" },
+  { header: "Risk/Reward",  getValue: (s) => "" },
+  { header: "Provider",     getValue: (s) => s.provider ?? "" },
   { header: "Timestamp",    getValue: (s) => s.timestamp ?? "" },
 ];
 

@@ -80,13 +80,6 @@ export function ProviderRatingBadge({
   const resolvedTotalSignals = profileData?.totalSignals ?? totalSignals;
   const resolvedName = profileData?.name ?? providerName;
 
-  // Nothing to show if no rating data is available
-  if (resolvedTrustScore === undefined && resolvedWinRate === undefined) return null;
-
-  const score = resolvedTrustScore ?? resolvedWinRate ?? 0;
-  const stars = scoreToStars(score);
-  const { color, label } = scoreTier(score);
-
   const popoverId = `provider-rating-popover-${resolvedName ?? "unknown"}`;
 
   function togglePopover() {
@@ -123,6 +116,13 @@ export function ProviderRatingBadge({
       document.removeEventListener("pointerdown", onPointerDown);
     };
   }, [popoverOpen]);
+
+  // Nothing to show if no rating data is available
+  if (resolvedTrustScore === undefined && resolvedWinRate === undefined) return null;
+
+  const score = resolvedTrustScore ?? resolvedWinRate ?? 0;
+  const stars = scoreToStars(score);
+  const { color, label } = scoreTier(score);
 
   const trigger = compact ? (
     <button
@@ -190,7 +190,7 @@ export function ProviderRatingBadge({
           <div className="mb-2 space-y-1.5">
             {TRUST_FACTORS.map(({ key, weight }) => {
               const raw = profileData
-                ? (profileData as Record<string, unknown>)[key]
+                ? (profileData as unknown as Record<string, unknown>)[key]
                 : key === "trustScore"
                 ? resolvedTrustScore
                 : key === "winRate"

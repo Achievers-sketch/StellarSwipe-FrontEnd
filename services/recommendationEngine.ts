@@ -4,7 +4,7 @@
  * Replace scoring logic with a real ML backend call when available.
  */
 import { useRecommendationStore, type RiskProfile, type RecommendedSignal } from '@/store/useRecommendationStore';
-import type { Signal } from '@/lib/types';
+import type { Signal } from '@/lib/api-types.generated';
 
 const RISK_CONFIDENCE_FLOOR: Record<RiskProfile, number> = {
   conservative: 75,
@@ -89,11 +89,11 @@ function scoreSignal(
   if (signal.confidence < floor) return { score: 0, reasons: [] };
 
   // Boost for liked assets
-  if (likedAssets.has(signal.asset)) {
+  if (likedAssets.has(signal.ticker)) {
     score += 15;
-    reasons.push(`You've liked ${signal.asset} signals before`);
+    reasons.push(`You've liked ${signal.ticker} signals before`);
   }
-  if (dislikedAssets.has(signal.asset)) {
+  if (dislikedAssets.has(signal.ticker)) {
     score -= 20;
   }
 
@@ -114,7 +114,7 @@ function scoreSignal(
   }
 
   // Direction diversity
-  if (signal.direction === 'BUY') {
+  if (signal.action === 'BUY') {
     reasons.push('Bullish momentum detected');
   }
 
@@ -139,11 +139,11 @@ export function computeRecommendations(signals: Signal[]): RecommendedSignal[] {
 
   const likedAssets = new Set(feedback.filter((f) => f.liked).map((f) => {
     const sig = signals.find((s) => s.id === f.signalId);
-    return sig?.asset ?? '';
+    return sig?.ticker ?? '';
   }));
   const dislikedAssets = new Set(feedback.filter((f) => !f.liked).map((f) => {
     const sig = signals.find((s) => s.id === f.signalId);
-    return sig?.asset ?? '';
+    return sig?.ticker ?? '';
   }));
 
   const recs: RecommendedSignal[] = signals
